@@ -46,7 +46,10 @@ def display_gif(display, path_to_gif, display_resolution, lock):
         for y in range(display_resolution[1]):
             for x in range(display_resolution[0]):
                 display.set_xy(x,y, tuple(int(x * bright) for x in rgb_frame.getpixel((x, y))))
-        display.show()
+        if display.is_running():
+            display.show()
+        else:
+            logger.warning("display.show() called but display not running")
         if 'duration' in frame.info:
             if isinstance(frame.info['duration'], int):
                 time.sleep(frame.info['duration']/1000)
