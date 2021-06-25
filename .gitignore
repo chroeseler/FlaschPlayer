@@ -1,1 +1,7 @@
 env/
+__pycache__/
+data/queue.txt
+data/queue.txt.lock
+data/config/settings
+data/graveyard/*
+data/gifs/*
