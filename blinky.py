@@ -25,6 +25,7 @@ def display_gif(display, filepath, display_resolution):
     it will be displayed immediately. This repeats until no further
     gifs are in line"""
 
+    frame_rate = 0.05
 
     def draw_frame(frame):
         rgb_frame = frame.convert('RGB')
@@ -39,9 +40,9 @@ def display_gif(display, filepath, display_resolution):
             if isinstance(frame.info['duration'], int):
                 time.sleep(frame.info['duration']/1000)
             else:
-                time.sleep(0.1)
+                time.sleep(frame_rate)
         else:
-            time.sleep(0.1)
+            time.sleep(frame_rate)
 
     def bury_in_graveyard():
         os.rename(filepath, f'{config.work_dir}/graveyard/{time.time()}.gif')
