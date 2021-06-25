@@ -18,7 +18,7 @@ logger = logging.getLogger("blinky.led")
 def get_next_in_waiting_line():
     # TODO order waiting_line by something
     print("queue", glob.glob(f"{config.work_dir}/gifs/*.gif"))
-    return next(iter(glob.glob(f"{config.work_dir}/gifs/*.gif")), False)
+    return next(iter(sorted(glob.glob(f"{config.work_dir}/gifs/*.gif"))), False)
 
 def display_gif(display, filepath, display_resolution):
     """Main action point
