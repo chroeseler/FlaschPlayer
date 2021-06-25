@@ -13,7 +13,7 @@ import layout
 import config
 
 
-def display_gif(strip, matrix, path_to_gif, display_resolution, lock):
+def display_gif(strip, path_to_gif, display_resolution, lock):
     """Main action point
 
     The methods takes the background gif and sets frame by frame
@@ -102,7 +102,7 @@ def set_brightness():
 
 def debug(delay, x_boxes=5, y_boxes=3, bright=1.0):
     """Debug Mode to test all RGB colors at any led"""
-    display_resolution, strip, matrix, led_count = init(x_boxes, y_boxes, bright, n_led=True)
+    display_resolution, strip, led_count = init(x_boxes, y_boxes, bright, n_led=True)
     # strip = neopixel.NeoPixel(board.D18, led_count, brightness=bright, auto_write=True)
     strip = display.MockDisplay(led_count)
     try:
@@ -124,7 +124,6 @@ def debug(delay, x_boxes=5, y_boxes=3, bright=1.0):
             for x in range(display_resolution[0]):
                 #It's not a bug it's a feature
                 strip.set_xy(x,y,(0,0,0))
-                #strip[matrix[y][x]] = (0, 0, 0)
 
 
 
@@ -141,24 +140,20 @@ def init(x_boxes, y_boxes, brightness=1, n_led=False):
     display_resolution = (x_boxes * 4, y_boxes * 5)
 
     #Setup LED stripe
-    #strip = neopixel.NeoPixel(board.D18, led_count, brightness=brightness, auto_write=False)
     strip = display.NeoPixelDisplay(led_count, x_boxes, y_boxes)
 
-    #Setup Display Matrix
-    #matrix[y][x] = led_id
-    matrix = layout.full_layout(x_boxes, y_boxes, vert=True)
     with open(config.waiting_line, 'w') as f:
         f.write('')
     if n_led:
-        return display_resolution, strip, matrix, led_count
+        return display_resolution, strip, led_count
     else:
-        return display_resolution, strip, matrix
+        return display_resolution, strip
 
 
 def main(x_boxes=5, y_boxes=3):
     """initializing folders, filelock, background gifs and runing the display"""
 
-    display_resolution, strip, matrix = init(x_boxes, y_boxes)
+    display_resolution, strip = init(x_boxes, y_boxes)
 
 
     #Setup Media Wait list
@@ -172,7 +167,7 @@ def main(x_boxes=5, y_boxes=3):
     mylist = [f[:-4] for f in glob.glob(f"{config.work_dir}/backgrounds/*.gif")]
 
     while mylist:
-        display_gif(strip, matrix, random.choice(mylist), display_resolution, lock)
+        display_gif(strip, random.choice(mylist), display_resolution, lock)
 
     if not mylist:
         sys.exit(f"No gif in {config.work_dir}/backgrounds")
