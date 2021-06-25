@@ -1,3 +1,3 @@
-bot: python3 blinky_bot.py
-blinky: python3 blinky.py
+bot: env/bin/python3 blinky_bot.py
+blinky: env/bin/python3 blinky.py
 
