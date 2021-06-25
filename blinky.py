@@ -160,8 +160,7 @@ def main(x_boxes=5, y_boxes=3):
 
 
 if __name__ == '__main__':
-    logger.info('############################################')
-    logger.info('Starting Blinky')
+    logger.info('#####  blinky   ###########################')
     import argparse
     PARSER = argparse.ArgumentParser()
     PARSER.add_argument("-d", "--debug", action="store_true", default=False,
