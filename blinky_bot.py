@@ -34,10 +34,8 @@ with open(config.waiting_line, 'w') as f:
 gif_counter = 0
 
 # Enable logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-
-logger = logging.getLogger(__name__)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger("blinky.bot")
 
 
 # Define a few command handlers. These usually take the two arguments update and

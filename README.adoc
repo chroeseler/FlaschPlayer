@@ -55,6 +55,15 @@ echo 'export WAIT_DIR=/some/directory' >> .envrc
 honcho start
 ....
 
+== Development Display
+
+There are different display implementations in `display.py`. They all implment the same API:
+
+- `set_xy(x, y, (r, g, b))` will set the RGB value for a given pixel
+- `show()` will flush the values to the display
+
+The `PyGameDisplay` implementation can also be test-drive with `python3 display_test.py`
+
 == Telegram
 
 Requires a bot token created via @BotFather.
