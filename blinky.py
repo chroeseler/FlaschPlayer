@@ -9,17 +9,13 @@ import ast
 import board
 import display as d
 from PIL import Image, ImageSequence
-from filelock import FileLock
 import layout
 import config
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("blinky.led")
 
-filelock_logger = logging.getLogger('filelock')
-filelock_logger.setLevel(logging.WARNING)
-
-def display_gif(display, path_to_gif, display_resolution, lock):
+def display_gif(display, path_to_gif, display_resolution):
     """Main action point
 
     The methods takes the background gif and sets frame by frame
@@ -27,18 +23,6 @@ def display_gif(display, path_to_gif, display_resolution, lock):
     Also the waiting list is checked. If a gif is in the list
     it will be displayed immediately. This repeats until no further
     gifs are in line"""
-
-
-    def update_line(lock):
-        with lock:
-            with open(config.waiting_line, 'r') as f:
-                line = f.read()
-                if len(line) > 1:
-                    logger.info(f'waiting line: {line}')
-                waiting_line = ast.literal_eval('[' + line[:-1] + ']')
-            with open(config.waiting_line, 'w') as f:
-                f.write('')
-        return waiting_line
 
 
     def draw_frame(frame, display_resolution):
@@ -61,35 +45,40 @@ def display_gif(display, path_to_gif, display_resolution, lock):
     def move_media(media):
         os.rename(f'{config.work_dir}/gifs/{media}.gif', f'{config.work_dir}/graveyard/{time.time()}.gif')
 
-    background_gif = Image.open(path_to_gif + '.gif')
-    logger.info(f'Back: {path_to_gif}.gif')
-    if (background_gif.size[0] < display_resolution[0] or
-            background_gif.size[1] < display_resolution[1]):
-        #fallback gif should be placed if the background is wrongly composed
-        background_gif = Image.open(f'{config.work_dir}/config/fallback.gif')
+    def draw_background_gif():
+        background_gif = Image.open(path_to_gif + '.gif')
+        logger.info(f'Back: {path_to_gif}.gif')
+        if (background_gif.size[0] < display_resolution[0] or
+                background_gif.size[1] < display_resolution[1]):
+            #fallback gif should be placed if the background is wrongly composed
+            background_gif = Image.open(f'{config.work_dir}/config/fallback.gif')
+
+        for frame in ImageSequence.Iterator(background_gif):
+            draw_frame(frame, display_resolution)
+
 
     #pylint: disable=too-many-nested-blocks
-    for frame in ImageSequence.Iterator(background_gif):
-        draw_frame(frame, display_resolution)
-        waiting_line = update_line(lock)
-        while waiting_line:
-            for media in waiting_line:
-                foreground_gif = Image.open(f'{config.work_dir}/gifs/{media}.gif')
-                logger.info(f'Front: {media}.gif')
-                if 'duration' in foreground_gif.info:
-                    #Adding the durations of every frame until at least 5 sec runtime
-                    runtime = 0
-                    while runtime <= 5000:
-                        #pylint: disable=redefined-outer-name
-                        for frame in ImageSequence.Iterator(foreground_gif):
-                            runtime += frame.info['duration']
-                            draw_frame(frame, display_resolution)
-                else:
-                    #photos in gif container get shown 5 seconds
-                    for _ in range(50):
-                        draw_frame(foreground_gif, display_resolution)
-                move_media(media)
-            waiting_line = update_line(lock)
+    # TODO order waiting_line by something
+    waiting_line = glob.glob(f"{config.work_dir}/gifs/*.gif")
+    print(waiting_line)
+    while waiting_line:
+        for file_path in waiting_line:
+            media = os.path.splitext(os.path.basename(file_path))[0]
+            foreground_gif = Image.open(file_path)
+            logger.info(f'Front: {media}.gif')
+            if 'duration' in foreground_gif.info:
+                #Adding the durations of every frame until at least 5 sec runtime
+                runtime = 0
+                while runtime <= 5000:
+                    #pylint: disable=redefined-outer-name
+                    for frame in ImageSequence.Iterator(foreground_gif):
+                        runtime += frame.info['duration']
+                        draw_frame(frame, display_resolution)
+            else:
+                #photos in gif container get shown 5 seconds
+                for _ in range(50):
+                    draw_frame(foreground_gif, display_resolution)
+            move_media(media)
 
 
 # TODO implement brightness as get_brightness() on display instances that
@@ -154,8 +143,6 @@ def init(x_boxes, y_boxes, brightness=1, n_led=False):
     display = d.PyGameDisplay(x_res, y_res, 50)
     # TODO set_brightness for display based on argument
 
-    with open(config.waiting_line, 'w') as f:
-        f.write('')
     if n_led:
         return display_resolution, display, led_count
     else:
@@ -163,7 +150,7 @@ def init(x_boxes, y_boxes, brightness=1, n_led=False):
 
 
 def main(x_boxes=5, y_boxes=3):
-    """initializing folders, filelock, background gifs and runing the display"""
+    """initializing folders, background gifs and runing the display"""
 
     display_resolution, display = init(x_boxes, y_boxes)
 
@@ -175,11 +162,10 @@ def main(x_boxes=5, y_boxes=3):
     os.makedirs(f"{config.work_dir}/gifs", exist_ok=True)
     # os.chown(f"{config.work_dir}/gifs", uid=1000, gid=1000)
 
-    lock = FileLock(config.waiting_line_lock, timeout=5)
     mylist = [f[:-4] for f in glob.glob(f"{config.work_dir}/backgrounds/*.gif")]
 
     while mylist:
-        display_gif(display, random.choice(mylist), display_resolution, lock)
+        display_gif(display, random.choice(mylist), display_resolution)
 
     if not mylist:
         sys.exit(f"No gif in {config.work_dir}/backgrounds")
