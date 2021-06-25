@@ -21,7 +21,7 @@ class MockDisplay:
 class NeoPixelDisplay:
     def __init__(self, led_count, x_boxes, y_boxes):
         if os.uname()[4][:3] == "arm":
-            self.strip = __import__("neopixel").NeoPixel(board.D18, led_count, brightness=bright, auto_write=True)
+            self.strip = __import__("neopixel").NeoPixel(board.D18, led_count, brightness=bright, auto_write=False)
         else:
             self.strip = [None]*led_count
         self.matrix = layout.full_layout(x_boxes, y_boxes, vert=True)
