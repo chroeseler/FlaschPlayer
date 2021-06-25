@@ -31,6 +31,7 @@ class NeoPixelDisplay:
 
     def show(self):
         logger.info("NeoPixel flush")
+        self.strip.show()
 
     def set_xy(self, x, y, value):
         led_id = self.matrix[y][x]
