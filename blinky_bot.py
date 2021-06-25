@@ -102,16 +102,17 @@ def image_handler(update, context):
 
 def put_gifs(telegram_file):
     global gif_counter
+    out = f'{config.work_dir}/gifs/{gif_counter:06d}.gif'
     try:
         ff = FFmpeg(
                 inputs={telegram_file: '-y -hide_banner -loglevel error'}, #TODO REmove the -y ??/
-                outputs={f'{config.work_dir}/gifs/' + str(gif_counter) + '.gif': '-s 20x15'})
+                outputs={out: '-s 20x15'})
         ff.run()
         try:
-            with open(f'{config.work_dir}/gifs/' + str(gif_counter) + '.gif') as f:
-                logger.info(f'Gif creation succesfull: {gif_counter:06d}.gif')
+            with open(out) as f:
+                logger.info(f'Gif creation succesfull: {out}')
         except IOError:
-            logger.warning(f'Gif creation failed: {gif_counter:06d}.gif')
+            logger.warning(f'Gif creation failed: {out}')
     except:
         logger.warning('FFmpeg Error!')
     try:
