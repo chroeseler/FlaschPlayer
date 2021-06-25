@@ -2,16 +2,16 @@ import os
 import logging
 import board
 import layout
+import numpy as np
+import pygame as pg
 
 logger = logging.getLogger("blinky.display")
 
 class MockDisplay:
-    # default constructor
     def __init__(self, led_count):
         self.width = 20
         self.height = 15
 
-    # a method for printing data members
     def show(self):
         logger.info(self.width, "x", self.height)
 
@@ -26,7 +26,6 @@ class NeoPixelDisplay:
             self.strip = [None]*led_count
         self.matrix = layout.full_layout(x_boxes, y_boxes, vert=True)
 
-    # a method for printing data members
     def show(self):
         logger.info(f"NeoPixel flush")
 
@@ -35,3 +34,37 @@ class NeoPixelDisplay:
         logger.debug(f'set_xy x: {x}, y: {y}, val: {value}, id: {led_id}')
         self.strip[led_id] = value
 
+class PyGameDisplay:
+    def __init__(self, x_pixels, y_pixels, pixel_size):
+        pg.init()
+        surface_x = x_pixels * pixel_size
+        surface_y = y_pixels * pixel_size
+        pg.display.set_mode((surface_x, surface_y))
+        self.surface = pg.Surface((surface_x, surface_y))
+        pg.display.flip()
+        self.ar = pg.PixelArray(self.surface)
+        self.pixel_size = pixel_size
+        self.x_pixels = x_pixels
+        self.y_pixels = y_pixels
+
+    def show(self):
+        del self.ar
+        screen = pg.display.get_surface()
+        screen.blit(self.surface, (0, 0))
+        pg.display.flip()
+        self.ar = pg.PixelArray(self.surface)
+
+    def paint_random(self):
+        color = tuple(np.random.choice(range(256), size=3))
+        self.set_xy(np.random.choice(range(self.x_pixels)),
+                np.random.choice(range(self.y_pixels)),
+                color)
+
+    def set_xy(self, x, y, color):
+        x_offset = x * self.pixel_size
+        y_offset = y * self.pixel_size
+        for tx in range(x_offset, x_offset + self.pixel_size):
+            for ty in range(y_offset, y_offset + self.pixel_size):
+                # this log line will slow down frame renders a lot
+                # print(f"translated {x},{y} -> {tx},{ty}")
+                self.ar[tx,ty] = color
