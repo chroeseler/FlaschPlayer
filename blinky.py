@@ -38,11 +38,8 @@ def display_gif(display, filepath, display_resolution):
             logger.warning("display.show() called but display not running")
         if 'duration' in frame.info:
             if isinstance(frame.info['duration'], int):
-                time.sleep(frame.info['duration']/1000)
-            else:
-                time.sleep(default_frame_rate)
-        else:
-            time.sleep(default_frame_rate)
+                if frame.info['duration'] > 100:
+                    time.sleep((frame.info['duration'] - 100) / 1000)
 
     def bury_in_graveyard():
         os.rename(filepath, f'{config.work_dir}/graveyard/{time.time()}.gif')
