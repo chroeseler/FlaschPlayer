@@ -63,8 +63,10 @@ def display_gif(display, filepath, display_resolution):
 
     def loop_gif(image, duration):
         runtime = 0
-        while runtime <= duration and not should_abort():
+        while runtime <= duration and not should_abort() and display.is_running():
             for frame in ImageSequence.Iterator(image):
+                if not display.is_running():
+                    break
                 runtime += frame.info['duration']
                 draw_frame(frame)
                 if should_abort():
