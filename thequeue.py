@@ -31,7 +31,7 @@ def take():
         if data:
             logger.info("Took: %s", data[0].strip())
             return data[0].strip()
-        else: 
+        else:
             logger.info("No item in queue")
             return None
 
