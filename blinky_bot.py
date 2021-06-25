@@ -21,7 +21,6 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 from PIL import Image
 from ffmpy import FFmpeg
-from filelock import Timeout, FileLock
 import os
 import config
 import glob
@@ -130,11 +129,10 @@ def put_gifs(telegram_file):
     except:
         logger.warning('FFmpeg Error!')
     try:
-        with lock:
-            with open(config.waiting_line, 'r') as f:
-                line = f.read()
-            with open(config.waiting_line, 'w') as f:
-                f.write(line + str(gif_counter) + ',')
+        with open(config.waiting_line, 'r') as f:
+            line = f.read()
+        with open(config.waiting_line, 'w') as f:
+            f.write(line + str(gif_counter) + ',')
         gif_counter += 1
     except Timeout:
         logger.warning('Cant accuire lock!')
