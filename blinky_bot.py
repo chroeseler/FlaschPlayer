@@ -15,13 +15,17 @@ Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
 import logging
+import pushover as po
 
 from telegram import Bot
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
+import traceback
+
 from PIL import Image
 from ffmpy import FFmpeg
 import os
+import sys
 import config
 import thequeue as q
 import glob
@@ -80,7 +84,9 @@ to 20x15 pixel and show you? :D""")
 def error(update, context):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
-
+    error = traceback.format_exc()
+    logger.error(f"Error: {str(context.error)}\n{error}")
+    po.send(f"Error: {str(context.error)}\n{error}")
 
 def gif_handler(update, context):
     logger.info(f'Starting Gif Handler')
@@ -115,8 +121,9 @@ def put_gifs(telegram_file):
                 logger.info(f'Gif creation succesfull: {out}')
         except IOError:
             logger.warning(f'Gif creation failed: {out}')
-    except:
+    except Exception as e:
         logger.warning('FFmpeg Error!')
+        po.send(f"ffmpeg error\n{traceback.format_exec()}")
     try:
         q.mark_ready(out)
         gif_counter += 1
@@ -158,14 +165,17 @@ def main():
     while True:
         try:
             updater.start_polling()
-        except:
+            updater.idle()
+        except KeyboardInterrupt:
+            sys.exit(0)
+        except Exception as e:
+            po.send(f"telegram connection error\n{str(e)}")
             logger.error("Connection Failure")
 
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
     # start_polling() is non-blocking and will stop the bot gracefully.
-    updater.idle()
 
 
 if __name__ == '__main__':
