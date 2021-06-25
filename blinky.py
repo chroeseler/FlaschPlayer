@@ -16,6 +16,9 @@ import config
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("blinky.led")
 
+filelock_logger = logging.getLogger('filelock')
+filelock_logger.setLevel(logging.WARNING)
+
 def display_gif(display, path_to_gif, display_resolution, lock):
     """Main action point
 
