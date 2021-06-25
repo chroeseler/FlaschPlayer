@@ -97,9 +97,15 @@ def error(update, context):
 
 def gif_handler(update, context):
     logger.info(f'Starting Gif Handler')
-    mp4 = context.bot.getFile(update.message.document.file_id)
-    mp4.download(f'{config.work_dir}/media.mp4')
-    put_gifs(f'{config.work_dir}/media.mp4')
+    if update.message.document.file_size < 20000000:
+        mp4 = context.bot.getFile(update.message.document.file_id)
+        mp4.download(f'{config.work_dir}/media.mp4')
+        logger.info(os.path.getsize(f'{config.work_dir}/media.mp4'))
+        put_gifs(f'{config.work_dir}/media.mp4')
+    else:
+        update.message.reply_text("""Wow! Sry that's way to big!
+                I'm just a little pi and I can't handle that much traffic.
+                Please send me something smaller. :)""")
 
 
 def image_handler(update, context):
