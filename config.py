@@ -37,5 +37,12 @@ class ConfigVar:
         logger.info("Setting config %s to %s", self.key, val)
         set_config(self.key, str(val))
 
+def coerce(x):
+    if isinstance(x, str):
+        return x
+    else:
+        return x.decode('utf-8')
+
+
 brightness = ConfigVar("brightness", 1, float)
-mood = ConfigVar("mood", "default", lambda v: v.decode("utf-8"))
+mood = ConfigVar("mood", "default", coerce)
