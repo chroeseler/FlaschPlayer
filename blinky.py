@@ -41,11 +41,11 @@ def display_gif(display, path_to_gif, display_resolution, lock):
         return waiting_line
 
 
-    def draw_frame(frame, display_resolution, bright):
+    def draw_frame(frame, display_resolution):
         rgb_frame = frame.convert('RGB')
         for y in range(display_resolution[1]):
             for x in range(display_resolution[0]):
-                display.set_xy(x,y, tuple(int(x * bright) for x in rgb_frame.getpixel((x, y))))
+                display.set_xy(x,y, rgb_frame.getpixel((x, y)))
         if display.is_running():
             display.show()
         else:
@@ -70,12 +70,10 @@ def display_gif(display, path_to_gif, display_resolution, lock):
 
     #pylint: disable=too-many-nested-blocks
     for frame in ImageSequence.Iterator(background_gif):
-        bright = set_brightness()
-        draw_frame(frame, display_resolution, bright)
+        draw_frame(frame, display_resolution)
         waiting_line = update_line(lock)
         while waiting_line:
             for media in waiting_line:
-                bright = set_brightness()
                 foreground_gif = Image.open(f'{config.work_dir}/gifs/{media}.gif')
                 logger.info(f'Front: {media}.gif')
                 if 'duration' in foreground_gif.info:
@@ -85,28 +83,31 @@ def display_gif(display, path_to_gif, display_resolution, lock):
                         #pylint: disable=redefined-outer-name
                         for frame in ImageSequence.Iterator(foreground_gif):
                             runtime += frame.info['duration']
-                            draw_frame(frame, display_resolution, bright)
+                            draw_frame(frame, display_resolution)
                 else:
                     #photos in gif container get shown 5 seconds
                     for _ in range(50):
-                        draw_frame(foreground_gif, display_resolution, bright)
+                        draw_frame(foreground_gif, display_resolution)
                 move_media(media)
             waiting_line = update_line(lock)
 
 
-def set_brightness():
-    """Lists all files in config folder and extracts the option from
-    the file name."""
-    options = [f for f in files(f"{config.work_dir}/config/")]
-    try:
-        brightness = float([i for i in options if 'BRIGHTNESS' in i][0][11:])
-    except ValueError:
-        brightness = 1.0
-        logger.error(f'ERROR: Reset Brightness: {brightness}')
-    except:
-        brightness = 1.0
-        logger.error("Something broken, should fix some time")
-    return brightness
+# TODO implement brightness as get_brightness() on display instances that
+# periodically fetch brightness setting from file in config/
+
+# def set_brightness():
+#     """Lists all files in config folder and extracts the option from
+#     the file name."""
+#     options = [f for f in files(f"{config.work_dir}/config/")]
+#     try:
+#         brightness = float([i for i in options if 'BRIGHTNESS' in i][0][11:])
+#     except ValueError:
+#         brightness = 1.0
+#         logger.error(f'ERROR: Reset Brightness: {brightness}')
+#     except:
+#         brightness = 1.0
+#         logger.error("Something broken, should fix some time")
+#     return brightness
 
 
 # TODO implement this as method on NeoPixelDisplay implementation
@@ -151,6 +152,7 @@ def init(x_boxes, y_boxes, brightness=1, n_led=False):
     display_resolution = (x_res, y_res)
 
     display = d.PyGameDisplay(x_res, y_res, 50)
+    # TODO set_brightness for display based on argument
 
     with open(config.waiting_line, 'w') as f:
         f.write('')
