@@ -33,6 +33,7 @@ def take():
             return data[0].strip()
         else: 
             logger.info("No item in queue")
+            return None
 
 # mark_ready("asd")
 # mark_ready("stay")
