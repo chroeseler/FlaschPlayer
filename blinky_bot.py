@@ -169,9 +169,9 @@ def main():
         except KeyboardInterrupt:
             sys.exit(0)
         except Exception as e:
-            po.send(f"telegram connection error\n{str(e)}")
-            logger.error("Connection Failure")
-
+            es = traceback.format_exc()
+            logger.error(f"Error: {str(e)}\n{es}")
+            po.send(f"Error: {str(e)}\n{es}")
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
