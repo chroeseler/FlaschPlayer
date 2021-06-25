@@ -92,7 +92,6 @@ class PyGameDisplay:
         pg.display.set_mode((surface_x, surface_y))
         self.surface = pg.Surface((surface_x, surface_y))
         pg.display.flip()
-        self.ar = pg.PixelArray(self.surface)
         self.pixel_size = pixel_size
         self.x_pixels = x_pixels
         self.y_pixels = y_pixels
@@ -112,11 +111,9 @@ class PyGameDisplay:
 
     def show(self):
         pg = self.pg
-        del self.ar
         screen = pg.display.get_surface()
         screen.blit(self.surface, (0, 0))
         pg.display.flip()
-        self.ar = pg.PixelArray(self.surface)
         self.process_events()
 
     def paint_random(self):
@@ -128,8 +125,4 @@ class PyGameDisplay:
     def set_xy(self, x, y, color):
         x_offset = x * self.pixel_size
         y_offset = y * self.pixel_size
-        for tx in range(x_offset, x_offset + self.pixel_size):
-            for ty in range(y_offset, y_offset + self.pixel_size):
-                # this log line will slow down frame renders a lot
-                # print(f"translated {x},{y} -> {tx},{ty}")
-                self.ar[tx,ty] = color
+        self.pg.draw.rect(self.surface, color, self.pg.Rect(x_offset, y_offset, self.pixel_size, self.pixel_size))
