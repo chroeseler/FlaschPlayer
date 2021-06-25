@@ -25,7 +25,6 @@ import os
 import config
 import glob
 
-lock = FileLock(config.waiting_line_lock, timeout=10)
 #Init of waiting line as empty file
 with open(config.waiting_line, 'w') as f:
     f.write('')
