@@ -47,8 +47,6 @@ def display_gif(display, filepath, display_resolution):
         else:
             time.sleep(0.1)
 
-            time.sleep(0.05)
-
     def bury_in_graveyard():
         os.rename(filepath, f'{config.work_dir}/graveyard/{time.time()}.gif')
 
