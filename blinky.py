@@ -106,30 +106,30 @@ def set_brightness():
 
 
 # TODO implement this as method on NeoPixelDisplay implementation
-def debug(delay, x_boxes=5, y_boxes=3, bright=1.0):
-    """Debug Mode to test all RGB colors at any led"""
-    display_resolution, strip, led_count = init(x_boxes, y_boxes, bright, n_led=True)
-    # strip = neopixel.NeoPixel(board.D18, led_count, brightness=bright, auto_write=True)
-    strip = display.MockDisplay(led_count)
-    try:
-        while True:
-            for i in range(led_count):
-                strip[i] = (255, 255, 255)
-                time.sleep(delay)
-            for i in range(led_count):
-                strip[i] = (255, 0, 0)
-                time.sleep(delay)
-            for i in range(led_count):
-                strip[i] = (0, 255, 0)
-                time.sleep(delay)
-            for i in range(led_count):
-                strip[i] = (0, 0, 255)
-                time.sleep(delay)
-    except KeyboardInterrupt:
-        for y in range(display_resolution[1]):
-            for x in range(display_resolution[0]):
-                #It's not a bug it's a feature
-                strip.set_xy(x,y,(0,0,0))
+#def debug(delay, x_boxes=5, y_boxes=3, bright=1.0):
+#    """Debug Mode to test all RGB colors at any led"""
+#    display_resolution, strip, led_count = init(x_boxes, y_boxes, bright, n_led=True)
+#    # strip = neopixel.NeoPixel(board.D18, led_count, brightness=bright, auto_write=True)
+#    strip = display.MockDisplay(led_count)
+#    try:
+#        while True:
+#            for i in range(led_count):
+#                strip[i] = (255, 255, 255)
+#                time.sleep(delay)
+#            for i in range(led_count):
+#                strip[i] = (255, 0, 0)
+#                time.sleep(delay)
+#            for i in range(led_count):
+#                strip[i] = (0, 255, 0)
+#                time.sleep(delay)
+#            for i in range(led_count):
+#                strip[i] = (0, 0, 255)
+#                time.sleep(delay)
+#    except KeyboardInterrupt:
+#        for y in range(display_resolution[1]):
+#            for x in range(display_resolution[0]):
+#                #It's not a bug it's a feature
+#                strip.set_xy(x,y,(0,0,0))
 
 
 
