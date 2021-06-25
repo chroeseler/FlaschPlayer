@@ -1,6 +1,7 @@
 """Blinky: Main contributer to FlaschPlayer"""
 import time
 import os
+import logging
 import sys
 import random
 import glob
@@ -12,6 +13,8 @@ from filelock import FileLock
 import layout
 import config
 
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger("blinky.led")
 
 def display_gif(strip, path_to_gif, display_resolution, lock):
     """Main action point
@@ -28,7 +31,7 @@ def display_gif(strip, path_to_gif, display_resolution, lock):
             with open(config.waiting_line, 'r') as f:
                 line = f.read()
                 if len(line) > 1:
-                    print(f'waiting line: {line}')
+                    logger.info(f'waiting line: {line}')
                 waiting_line = ast.literal_eval('[' + line[:-1] + ']')
             with open(config.waiting_line, 'w') as f:
                 f.write('')
@@ -39,7 +42,6 @@ def display_gif(strip, path_to_gif, display_resolution, lock):
         rgb_frame = frame.convert('RGB')
         for y in range(display_resolution[1]):
             for x in range(display_resolution[0]):
-                print(f'x: {x}, y: {y}')
                 strip.set_xy(x,y, tuple(int(x * bright) for x in rgb_frame.getpixel((x, y))))
         strip.show()
         if 'duration' in frame.info:
@@ -52,7 +54,7 @@ def display_gif(strip, path_to_gif, display_resolution, lock):
 
 
     background_gif = Image.open(path_to_gif + '.gif')
-    print(f'Back: {path_to_gif}.gif')
+    logger.info(f'Back: {path_to_gif}.gif')
     if (background_gif.size[0] < display_resolution[0] or
             background_gif.size[1] < display_resolution[1]):
         #fallback gif should be placed if the background is wrongly composed
@@ -67,7 +69,7 @@ def display_gif(strip, path_to_gif, display_resolution, lock):
             for media in waiting_line:
                 bright = set_brightness()
                 foreground_gif = Image.open(f'{config.work_dir}/gifs/{media}.gif')
-                print(f'Front: {media}.gif')
+                logger.info(f'Front: {media}.gif')
                 if 'duration' in foreground_gif.info:
                     #Adding the durations of every frame until at least 5 sec runtime
                     runtime = 0
@@ -93,10 +95,10 @@ def set_brightness():
         brightness = float([i for i in options if 'BRIGHTNESS' in i][0][11:])
     except ValueError:
         brightness = 1.0
-        print(f'ERROR: Reset Brightness: {brightness}')
+        logger.error(f'ERROR: Reset Brightness: {brightness}')
     except:
         brightness = 1.0
-        print("Something broken, should fix some time")
+        logger.error("Something broken, should fix some time")
     return brightness
 
 
@@ -173,8 +175,8 @@ def main(x_boxes=5, y_boxes=3):
         sys.exit(f"No gif in {config.work_dir}/backgrounds")
 
 if __name__ == '__main__':
-    print('############################################')
-    print('Starting Blinky')
+    logger.info('############################################')
+    logger.info('Starting Blinky')
     import argparse
     PARSER = argparse.ArgumentParser()
     PARSER.add_argument("-d", "--debug", action="store_true", default=False,

@@ -1,6 +1,9 @@
 import os
+import logging
 import board
 import layout
+
+logger = logging.getLogger("blinky.display")
 
 class MockDisplay:
     # default constructor
@@ -10,10 +13,10 @@ class MockDisplay:
 
     # a method for printing data members
     def show(self):
-        print(self.width, "x", self.height)
+        logger.info(self.width, "x", self.height)
 
     def set_xy(self, x, y):
-        print(f'x: {x}, y: {y}')
+        logger.info(f'x: {x}, y: {y}')
 
 class NeoPixelDisplay:
     def __init__(self, led_count, x_boxes, y_boxes):
@@ -25,10 +28,10 @@ class NeoPixelDisplay:
 
     # a method for printing data members
     def show(self):
-        print(f"NeoPixel flush")
+        logger.info(f"NeoPixel flush")
 
     def set_xy(self, x, y, value):
         led_id = self.matrix[y][x]
-        print(f'x: {x}, y: {y}, val: {value}, id: {led_id}')
+        logger.debug(f'set_xy x: {x}, y: {y}, val: {value}, id: {led_id}')
         self.strip[led_id] = value
 
