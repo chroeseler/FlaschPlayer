@@ -48,11 +48,12 @@ def help(update, context):
 def brightness(update, context):
     """Send a message when the command /brightness is issued."""
     config.brightness.set(context.args[0])
-
+    update.message.reply_text(f"Brightness set to {context.args[0]}")
 
 def mood(update, context):
     """Send a message when the command /mood is issued."""
     config.mood.set(context.args[0])
+    update.message.reply_text(f"Mood set {context.args[0]}")
 
 def echo(update, context):
     """Echo the user message."""
