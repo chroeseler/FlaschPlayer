@@ -35,7 +35,6 @@ class NeoPixelDisplay:
     def show(self):
         if os.uname()[4][:3] != "arm":
             logger.error("Not an ARM thing!")
-        logger.info("NeoPixel flush")
         self.strip.show()
 
     def set_xy(self, x, y, value):
