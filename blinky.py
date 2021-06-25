@@ -6,7 +6,7 @@ import random
 import glob
 import ast
 import board
-import neopixel
+import display
 from PIL import Image, ImageSequence
 from filelock import FileLock
 import layout
@@ -39,8 +39,8 @@ def display_gif(strip, matrix, path_to_gif, display_resolution, lock):
         rgb_frame = frame.convert('RGB')
         for y in range(display_resolution[1]):
             for x in range(display_resolution[0]):
-                strip[matrix[y][x]] = tuple(
-                    int(x * bright) for x in rgb_frame.getpixel((x, y)))
+                print(f'x: {x}, y: {y}')
+                strip.set_xy(x,y, tuple(int(x * bright) for x in rgb_frame.getpixel((x, y))))
         strip.show()
         if 'duration' in frame.info:
             if isinstance(frame.info['duration'], int):
@@ -103,7 +103,8 @@ def set_brightness():
 def debug(delay, x_boxes=5, y_boxes=3, bright=1.0):
     """Debug Mode to test all RGB colors at any led"""
     display_resolution, strip, matrix, led_count = init(x_boxes, y_boxes, bright, n_led=True)
-    strip = neopixel.NeoPixel(board.D18, led_count, brightness=bright, auto_write=True)
+    # strip = neopixel.NeoPixel(board.D18, led_count, brightness=bright, auto_write=True)
+    strip = display.MockDisplay(led_count)
     try:
         while True:
             for i in range(led_count):
@@ -122,7 +123,8 @@ def debug(delay, x_boxes=5, y_boxes=3, bright=1.0):
         for y in range(display_resolution[1]):
             for x in range(display_resolution[0]):
                 #It's not a bug it's a feature
-                strip[matrix[y][x]] = (0, 0, 0)
+                strip.set_xy(x,y,(0,0,0))
+                #strip[matrix[y][x]] = (0, 0, 0)
 
 
 
@@ -139,7 +141,8 @@ def init(x_boxes, y_boxes, brightness=1, n_led=False):
     display_resolution = (x_boxes * 4, y_boxes * 5)
 
     #Setup LED stripe
-    strip = neopixel.NeoPixel(board.D18, led_count, brightness=brightness, auto_write=False)
+    #strip = neopixel.NeoPixel(board.D18, led_count, brightness=brightness, auto_write=False)
+    strip = display.NeoPixelDisplay(led_count, x_boxes, y_boxes)
 
     #Setup Display Matrix
     #matrix[y][x] = led_id
