@@ -119,8 +119,8 @@ def put_gifs(telegram_file):
     try:
         q.mark_ready(out)
         gif_counter += 1
-    except Timeout:
-        logger.warning('Cant accuire lock!')
+    except Exception as e:
+        logger.error(traceback.format_exec())
 
 
 def main():
