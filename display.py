@@ -26,8 +26,11 @@ class NeoPixelDisplay:
             self.strip = [None]*led_count
         self.matrix = layout.full_layout(x_boxes, y_boxes, vert=True)
 
+    def is_running(self):
+        return True
+
     def show(self):
-        logger.info(f"NeoPixel flush")
+        logger.info("NeoPixel flush")
 
     def set_xy(self, x, y, value):
         led_id = self.matrix[y][x]
@@ -46,6 +49,18 @@ class PyGameDisplay:
         self.pixel_size = pixel_size
         self.x_pixels = x_pixels
         self.y_pixels = y_pixels
+        self.running = True
+
+    def is_running(self):
+        return self.running
+
+    def process_events(self):
+        for event in pg.event.get():
+            logger.debug(event)
+            if event.type == pg.QUIT:
+                logger.info("Exiting PyGameDisplay")
+                self.running = False
+                pg.quit()
 
     def show(self):
         del self.ar
@@ -53,6 +68,7 @@ class PyGameDisplay:
         screen.blit(self.surface, (0, 0))
         pg.display.flip()
         self.ar = pg.PixelArray(self.surface)
+        self.process_events()
 
     def paint_random(self):
         color = tuple(np.random.choice(range(256), size=3))
