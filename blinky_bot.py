@@ -51,21 +51,12 @@ def help(update, context):
 
 def brightness(update, context):
     """Send a message when the command /brightness is issued."""
-    option = glob.glob(f'{config.work_dir}/config/BRIGHTNESS=*')
-    os.rename(option[0], f'{config.work_dir}/config/BRIGHTNESS=' + context.args[0])
+    config.brightness.set(context.args[0])
 
 
 def mood(update, context):
     """Send a message when the command /mood is issued."""
-    option = glob.glob(f'{config.work_dir}/config/MOOD=*')
-    if context.args[0] == 'default':
-        os.rename(option[0], f'{config.work_dir}/config/MOOD=' + context.args[0])
-    elif context.args[0] == 'party':
-        os.rename(option[0], f'{config.work_dir}/config/MOOD=' + context.args[0])
-    elif context.args[0] == 'chill':
-        os.rename(option[0], f'{config.work_dir}/config/MOOD=' + context.args[0])
-    elif context.args[0] == 'simon':
-        os.rename(option[0], f'{config.work_dir}/config/MOOD=' + context.args[0])
+    config.mood.set(context.args[0])
 
 def echo(update, context):
     """Echo the user message."""
