@@ -146,7 +146,11 @@ def init(x_boxes, y_boxes, brightness=1, n_led=False):
     x_res, y_res = (x_boxes * 4, y_boxes * 5)
     display_resolution = (x_res, y_res)
 
-    display = d.PyGameDisplay(x_res, y_res, 50)
+    if config.use_neopixel:
+        display = d.NeoPixelDisplay(led_count, x_boxes, y_boxes)
+    else:
+        display = d.PyGameDisplay(x_res, y_res, 50)
+
     # TODO set_brightness for display based on argument
 
     if n_led:
