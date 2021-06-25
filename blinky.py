@@ -151,10 +151,12 @@ def main(x_boxes=5, y_boxes=3):
         try:
             next_gif = q.take() or random.choice(backgrounds)
             display_gif(display, next_gif, display_resolution)
+        except KeyboardInterrupt:
+            logger.info("Interrupted, exit, over and out")
+            sys.exit()
         except:
             logger.error(f"No gif in {config.work_dir}/backgrounds/{mood} or {config.work_dir}/gifs")
             time.sleep(1)
-            #_sys.exit(1)
 
 
 if __name__ == '__main__':
