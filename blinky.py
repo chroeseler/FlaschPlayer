@@ -115,7 +115,7 @@ def files(path):
             yield file
 
 
-def init(x_boxes, y_boxes, brightness=1, n_led=False):
+def init(x_boxes, y_boxes, n_led=False):
     """initializing the display"""
     led_count = x_boxes * y_boxes * 20
     x_res, y_res = (x_boxes * 4, y_boxes * 5)
