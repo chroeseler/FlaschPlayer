@@ -7,6 +7,7 @@ import random
 import glob
 import ast
 import board
+import thequeue as q
 import display as d
 from PIL import Image, ImageSequence
 import layout
@@ -14,9 +15,6 @@ import config
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("blinky.led")
-
-def get_next_in_waiting_line():
-    return next(iter(sorted(glob.glob(f"{config.work_dir}/gifs/*.gif"))), False)
 
 def display_gif(display, filepath, display_resolution):
     """Main action point
@@ -57,7 +55,7 @@ def display_gif(display, filepath, display_resolution):
         return "backgrounds" in filepath
 
     def should_abort():
-        return is_background() and get_next_in_waiting_line()
+        return is_background() and q.has_items()
 
     def loop_gif(image, duration):
         runtime = 0
@@ -148,7 +146,7 @@ def main(x_boxes=5, y_boxes=3):
         waiting_line = glob.glob(f"{config.work_dir}/gifs/*.gif")
         backgrounds = glob.glob(f"{config.work_dir}/backgrounds/*.gif")
         try:
-            next_gif = get_next_in_waiting_line() or random.choice(backgrounds)
+            next_gif = q.take() or random.choice(backgrounds)
         except:
             logger.error(f"No gif in {config.work_dir}/backgrounds or {config.work_dir}/gifs")
             sys.exit(1)

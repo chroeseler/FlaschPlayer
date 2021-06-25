@@ -23,6 +23,7 @@ from PIL import Image
 from ffmpy import FFmpeg
 import os
 import config
+import thequeue as q
 import glob
 
 gif_counter = 0
@@ -116,10 +117,7 @@ def put_gifs(telegram_file):
     except:
         logger.warning('FFmpeg Error!')
     try:
-        with open(config.waiting_line, 'r') as f:
-            line = f.read()
-        with open(config.waiting_line, 'w') as f:
-            f.write(line + str(gif_counter) + ',')
+        q.mark_ready(out)
         gif_counter += 1
     except Timeout:
         logger.warning('Cant accuire lock!')
