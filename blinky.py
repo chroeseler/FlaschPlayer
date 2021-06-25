@@ -156,7 +156,6 @@ def main(x_boxes=5, y_boxes=3):
             sys.exit()
         except:
             logger.error(f"No gif in {config.work_dir}/backgrounds/{mood} or {config.work_dir}/gifs")
-            display.pg.event.get()
             time.sleep(1)
 
 
