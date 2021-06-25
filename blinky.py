@@ -102,6 +102,7 @@ def set_brightness():
     return brightness
 
 
+# TODO implement this as method on NeoPixelDisplay implementation
 def debug(delay, x_boxes=5, y_boxes=3, bright=1.0):
     """Debug Mode to test all RGB colors at any led"""
     display_resolution, strip, led_count = init(x_boxes, y_boxes, bright, n_led=True)
