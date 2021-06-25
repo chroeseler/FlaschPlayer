@@ -71,7 +71,7 @@ def display_gif(display, filepath, display_resolution):
                     break
 
     def draw_gif(path):
-        total_loop_duration = 5000
+        total_loop_duration = 500
         logger.info(f'Playing: {filepath}')
         img = Image.open(filepath)
         if 'duration' in img.info:
