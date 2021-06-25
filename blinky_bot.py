@@ -49,23 +49,10 @@ def brightness(update, context):
     """Send a message when the command /brightness is issued."""
     config.brightness.set(context.args[0])
 
-# Global available moods
-moods = ["default", "dot", "gifts"]
-
-def next_mood(current):
-    if current in moods:
-
 
 def mood(update, context):
     """Send a message when the command /mood is issued."""
-    input = context.args[0]
-    current = config.mood.get()
-    if input == "next":
-        next_mood = moods[
-        update.message.reply_text('funktioniert noch nicht')
-    else:
-        next_mood = input if input in moods else current
-        config.mood.set(next_mood)
+    config.mood.set(context.args[0])
 
 def echo(update, context):
     """Echo the user message."""
