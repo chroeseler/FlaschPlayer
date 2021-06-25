@@ -1,5 +1,9 @@
 import os
+import logging
 import dbm
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger("blinky.config")
 
 work_dir = os.environ['WORK_DIR']
 
@@ -30,6 +34,7 @@ class ConfigVar:
             return self.coerce_fn(self.default)
 
     def set(self, val):
+        logger.info("Setting config %s to %s", self.key, val)
         set_config(self.key, str(val))
 
 brightness = ConfigVar("brightness", 1, float)
