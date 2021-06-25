@@ -30,7 +30,7 @@ def display_gif(display, filepath, display_resolution):
     gifs are in line"""
 
 
-    def draw_frame(frame, display_resolution):
+    def draw_frame(frame):
         rgb_frame = frame.convert('RGB')
         for y in range(display_resolution[1]):
             for x in range(display_resolution[0]):
