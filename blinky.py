@@ -15,7 +15,12 @@ import config
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("blinky.led")
 
-def display_gif(display, path_to_gif, display_resolution):
+def get_next_in_waiting_line():
+    # TODO order waiting_line by something
+    print("queue", glob.glob(f"{config.work_dir}/gifs/*.gif"))
+    return next(iter(glob.glob(f"{config.work_dir}/gifs/*.gif")), False)
+
+def display_gif(display, filepath, display_resolution):
     """Main action point
 
     The methods takes the background gif and sets frame by frame
@@ -42,46 +47,47 @@ def display_gif(display, path_to_gif, display_resolution):
         else:
             time.sleep(0.1)
 
-    def move_media(media):
-        os.rename(f'{config.work_dir}/gifs/{media}.gif', f'{config.work_dir}/graveyard/{time.time()}.gif')
+            time.sleep(0.05)
 
-    def draw_background_gif():
-        background_gif = Image.open(path_to_gif + '.gif')
-        logger.info(f'Back: {path_to_gif}.gif')
-        if (background_gif.size[0] < display_resolution[0] or
-                background_gif.size[1] < display_resolution[1]):
-            #fallback gif should be placed if the background is wrongly composed
-            background_gif = Image.open(f'{config.work_dir}/config/fallback.gif')
+    def bury_in_graveyard():
+        os.rename(filepath, f'{config.work_dir}/graveyard/{time.time()}.gif')
 
-        for frame in ImageSequence.Iterator(background_gif):
-            draw_frame(frame, display_resolution)
+    def show_photo(image):
+        # photos in gif container get shown 5 seconds
+        for _ in range(50):
+            draw_frame(image)
 
+    def is_background():
+        return "backgrounds" in filepath
 
-    #pylint: disable=too-many-nested-blocks
-    # TODO order waiting_line by something
-    waiting_line = glob.glob(f"{config.work_dir}/gifs/*.gif")
-    print(waiting_line)
-    while waiting_line:
-        for file_path in waiting_line:
-            media = os.path.splitext(os.path.basename(file_path))[0]
-            foreground_gif = Image.open(file_path)
-            logger.info(f'Front: {media}.gif')
-            if 'duration' in foreground_gif.info:
-                #Adding the durations of every frame until at least 5 sec runtime
-                runtime = 0
-                while runtime <= 5000:
-                    #pylint: disable=redefined-outer-name
-                    for frame in ImageSequence.Iterator(foreground_gif):
-                        runtime += frame.info['duration']
-                        draw_frame(frame, display_resolution)
-            else:
-                #photos in gif container get shown 5 seconds
-                for _ in range(50):
-                    draw_frame(foreground_gif, display_resolution)
-            move_media(media)
+    def should_abort():
+        return is_background() and get_next_in_waiting_line()
 
+    def loop_gif(image, duration):
+        runtime = 0
+        while runtime <= duration and not should_abort():
+            for frame in ImageSequence.Iterator(image):
+                runtime += frame.info['duration']
+                draw_frame(frame)
+                if should_abort():
+                    break
 
-# TODO implement brightness as get_brightness() on display instances that
+    def draw_gif(path):
+        total_loop_duration = 5000
+        logger.info(f'Playing: {filepath}')
+        img = Image.open(filepath)
+        if 'duration' in img.info:
+            #Adding the durations of every frame until at least 5 sec runtime
+            loop_gif(img, total_loop_duration)
+        else:
+            show_photo(img)
+
+        if not is_background():
+            logger.info("Moving to graveyard: %s", filepath)
+            bury_in_graveyard()
+
+    draw_gif(filepath)
+
 # periodically fetch brightness setting from file in config/
 
 # def set_brightness():
@@ -154,7 +160,6 @@ def main(x_boxes=5, y_boxes=3):
 
     display_resolution, display = init(x_boxes, y_boxes)
 
-
     #Setup Media Wait list
 
     os.makedirs(f"{config.work_dir}/graveyard", exist_ok=True)
@@ -162,13 +167,16 @@ def main(x_boxes=5, y_boxes=3):
     os.makedirs(f"{config.work_dir}/gifs", exist_ok=True)
     # os.chown(f"{config.work_dir}/gifs", uid=1000, gid=1000)
 
-    mylist = [f[:-4] for f in glob.glob(f"{config.work_dir}/backgrounds/*.gif")]
+    while display.is_running():
+        waiting_line = glob.glob(f"{config.work_dir}/gifs/*.gif")
+        backgrounds = glob.glob(f"{config.work_dir}/backgrounds/*.gif")
+        try:
+            next_gif = get_next_in_waiting_line() or random.choice(backgrounds)
+        except:
+            logger.error(f"No gif in {config.work_dir}/backgrounds or {config.work_dir}/gifs")
+            sys.exit(1)
 
-    while mylist:
-        display_gif(display, random.choice(mylist), display_resolution)
-
-    if not mylist:
-        sys.exit(f"No gif in {config.work_dir}/backgrounds")
+        display_gif(display, next_gif, display_resolution)
 
 if __name__ == '__main__':
     logger.info('############################################')
