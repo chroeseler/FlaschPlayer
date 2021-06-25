@@ -6,6 +6,7 @@ import time
 import numpy as np
 import pygame as pg
 
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("blinky.display")
 
 class MockDisplay:
@@ -32,6 +33,8 @@ class NeoPixelDisplay:
         return True
 
     def show(self):
+        if os.uname()[4][:3] != "arm":
+            logger.error("Not an ARM thing!")
         logger.info("NeoPixel flush")
         self.strip.show()
 
