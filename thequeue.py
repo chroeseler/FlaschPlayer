@@ -9,7 +9,8 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger("blinky.queue")
 logging.getLogger("filelock").setLevel(logging.WARN)
 
-open(queue_txt,"a").write("")
+def setup():
+    open(queue_txt,"a").write("")
 
 def mark_ready(path):
     with lock:

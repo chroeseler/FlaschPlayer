@@ -128,6 +128,8 @@ def main():
     # Create the Updater and pass it your bot's token.
     # Make sure to set use_context=True to use the new context based callbacks
     # Post version 12 this will no longer be necessary
+    logger.info("Setting up queue")
+    q.setup()
     token = os.environ['BOT_TOKEN']
     logger.info(f'Token: {token}')
     updater = Updater(token, use_context=True)
@@ -153,6 +155,7 @@ def main():
 
     # Start the Bot
     updater.start_polling()
+
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
