@@ -52,9 +52,21 @@ def help(update, context):
 
 def brightness(update, context):
     """Send a message when the command /brightness is issued."""
-    option = glob.glob('/home/pi/ws2812b/config/BRIGHTNESS=*')
-    os.rename(option[0], '/home/pi/ws2812b/config/BRIGHTNESS=' + context.args[0])
+    option = glob.glob(f'{config.work_dir}/config/BRIGHTNESS=*')
+    os.rename(option[0], f'{config.work_dir}/config/BRIGHTNESS=' + context.args[0])
 
+
+def mood(update, context):
+    """Send a message when the command /mood is issued."""
+    option = glob.glob(f'{config.work_dir}/config/MOOD=*')
+    if context.args[0] == 'default':
+        os.rename(option[0], f'{config.work_dir}/config/MOOD=' + context.args[0])
+    elif context.args[0] == 'party':
+        os.rename(option[0], f'{config.work_dir}/config/MOOD=' + context.args[0])
+    elif context.args[0] == 'chill':
+        os.rename(option[0], f'{config.work_dir}/config/MOOD=' + context.args[0])
+    elif context.args[0] == 'simon':
+        os.rename(option[0], f'{config.work_dir}/config/MOOD=' + context.args[0])
 
 def echo(update, context):
     """Echo the user message."""
@@ -86,15 +98,15 @@ def error(update, context):
 def gif_handler(update, context):
     logger.info(f'Starting Gif Handler')
     mp4 = context.bot.getFile(update.message.document.file_id)
-    mp4.download('/home/pi/ws2812b/media.mp4')
-    put_gifs('/home/pi/ws2812b/media.mp4')
+    mp4.download(f'{config.work_dir}/media.mp4')
+    put_gifs(f'{config.work_dir}/media.mp4')
 
 
 def image_handler(update, context):
     logger.info(f'Starting Image Handler')
     pic = context.bot.getFile(update.message.photo[-1].file_id)
-    pic.download('/home/pi/ws2812b/photo.gif')
-    put_gifs('/home/pi/ws2812b/photo.gif')
+    pic.download(f'{config.work_dir}/photo.gif')
+    put_gifs(f'{config.work_dir}/photo.gif')
 
 
 def put_gifs(telegram_file):
@@ -102,10 +114,10 @@ def put_gifs(telegram_file):
     try:
         ff = FFmpeg(
                 inputs={telegram_file: '-y -hide_banner -loglevel error'}, #TODO REmove the -y ??/
-                outputs={'/home/pi/ws2812b/gifs/' + str(gif_counter) + '.gif': '-s 20x15'})
+                outputs={f'{config.work_dir}/gifs/' + str(gif_counter) + '.gif': '-s 20x15'})
         ff.run()
         try:
-            with open('/home/pi/ws2812b/gifs/' + str(gif_counter) + '.gif') as f:
+            with open(f'{config.work_dir}/gifs/' + str(gif_counter) + '.gif') as f:
                 logger.info(f'Gif creation succesfull: {gif_counter}.gif')
         except IOError:
             logger.warning(f'Gif creation failed: {gif_counter}.gif')
@@ -138,6 +150,7 @@ def main():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler("brightness", brightness))
+    dp.add_handler(CommandHandler("mood", mood))
 
     dp.add_handler(MessageHandler(Filters.voice, voice_handler))
     dp.add_handler(MessageHandler(Filters.photo, image_handler))
