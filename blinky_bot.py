@@ -25,10 +25,6 @@ import os
 import config
 import glob
 
-#Init of waiting line as empty file
-with open(config.waiting_line, 'w') as f:
-    f.write('')
-
 gif_counter = 0
 
 # Enable logging
@@ -113,9 +109,9 @@ def put_gifs(telegram_file):
         ff.run()
         try:
             with open(f'{config.work_dir}/gifs/' + str(gif_counter) + '.gif') as f:
-                logger.info(f'Gif creation succesfull: {gif_counter}.gif')
+                logger.info(f'Gif creation succesfull: {gif_counter:06d}.gif')
         except IOError:
-            logger.warning(f'Gif creation failed: {gif_counter}.gif')
+            logger.warning(f'Gif creation failed: {gif_counter:06d}.gif')
     except:
         logger.warning('FFmpeg Error!')
     try:
