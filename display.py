@@ -1,4 +1,5 @@
 import os
+import config
 import logging
 import board
 import layout
@@ -36,10 +37,13 @@ class NeoPixelDisplay:
             logger.error("Not an ARM thing!")
         self.strip.show()
 
+    def set_brightness(self):
+        self.brightness = config.brightness.get()
+
     def set_xy(self, x, y, value):
         led_id = self.matrix[y][x]
         logger.debug(f'set_xy x: {x}, y: {y}, val: {value}, id: {led_id}')
-        self.strip[led_id] = value
+        self.strip[led_id] =  tuple(self.brightness * x for x in value)
 
     def flash(self):
         for i in range(self.led_count):
@@ -122,7 +126,11 @@ class PyGameDisplay:
                 np.random.choice(range(self.y_pixels)),
                 color)
 
+    def set_brightness(self):
+        self.brightness = config.brightness.get()
+
     def set_xy(self, x, y, color):
         x_offset = x * self.pixel_size
         y_offset = y * self.pixel_size
+        color  = tuple(self.brightness * x for x in color)
         self.pg.draw.rect(self.surface, color, self.pg.Rect(x_offset, y_offset, self.pixel_size, self.pixel_size))

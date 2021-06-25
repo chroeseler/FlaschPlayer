@@ -61,6 +61,7 @@ def display_gif(display, filepath, display_resolution):
     def loop_gif(image, duration):
         runtime = 0
         while runtime <= duration and not should_abort() and display.is_running():
+            display.set_brightness()
             for frame in ImageSequence.Iterator(image):
                 if not display.is_running():
                     break
