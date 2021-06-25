@@ -47,8 +47,6 @@ def display_gif(display, filepath, display_resolution):
         else:
             time.sleep(0.1)
 
-            time.sleep(0.05)
-
     def bury_in_graveyard():
         os.rename(filepath, f'{config.work_dir}/graveyard/{time.time()}.gif')
 
@@ -65,8 +63,10 @@ def display_gif(display, filepath, display_resolution):
 
     def loop_gif(image, duration):
         runtime = 0
-        while runtime <= duration and not should_abort():
+        while runtime <= duration and not should_abort() and display.is_running():
             for frame in ImageSequence.Iterator(image):
+                if not display.is_running():
+                    break
                 runtime += frame.info['duration']
                 draw_frame(frame)
                 if should_abort():
@@ -115,7 +115,7 @@ def files(path):
             yield file
 
 
-def init(x_boxes, y_boxes, brightness=1, n_led=False):
+def init(x_boxes, y_boxes, n_led=False):
     """initializing the display"""
     led_count = x_boxes * y_boxes * 20
     x_res, y_res = (x_boxes * 4, y_boxes * 5)
