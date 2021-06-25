@@ -154,7 +154,11 @@ def main():
     dp.add_error_handler(error)
 
     # Start the Bot
-    updater.start_polling()
+    while True:
+        try:
+            updater.start_polling()
+        except:
+            logger.error("Connection Failure")
 
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
