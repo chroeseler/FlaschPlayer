@@ -7,7 +7,7 @@ import random
 import glob
 import ast
 import board
-import display
+import display as d
 from PIL import Image, ImageSequence
 from filelock import FileLock
 import layout
@@ -16,11 +16,11 @@ import config
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("blinky.led")
 
-def display_gif(strip, path_to_gif, display_resolution, lock):
+def display_gif(display, path_to_gif, display_resolution, lock):
     """Main action point
 
     The methods takes the background gif and sets frame by frame
-    every pixel. After every frame the strip.show() method is called.
+    every pixel. After every frame the display.show() method is called.
     Also the waiting list is checked. If a gif is in the list
     it will be displayed immediately. This repeats until no further
     gifs are in line"""
@@ -42,8 +42,8 @@ def display_gif(strip, path_to_gif, display_resolution, lock):
         rgb_frame = frame.convert('RGB')
         for y in range(display_resolution[1]):
             for x in range(display_resolution[0]):
-                strip.set_xy(x,y, tuple(int(x * bright) for x in rgb_frame.getpixel((x, y))))
-        strip.show()
+                display.set_xy(x,y, tuple(int(x * bright) for x in rgb_frame.getpixel((x, y))))
+        display.show()
         if 'duration' in frame.info:
             if isinstance(frame.info['duration'], int):
                 time.sleep(frame.info['duration']/1000)
@@ -138,25 +138,25 @@ def files(path):
 
 
 def init(x_boxes, y_boxes, brightness=1, n_led=False):
-    """initializing the strip and calclate the mapping"""
+    """initializing the display"""
     led_count = x_boxes * y_boxes * 20
-    display_resolution = (x_boxes * 4, y_boxes * 5)
+    x_res, y_res = (x_boxes * 4, y_boxes * 5)
+    display_resolution = (x_res, y_res)
 
-    #Setup LED stripe
-    strip = display.NeoPixelDisplay(led_count, x_boxes, y_boxes)
+    display = d.PyGameDisplay(x_res, y_res, 50)
 
     with open(config.waiting_line, 'w') as f:
         f.write('')
     if n_led:
-        return display_resolution, strip, led_count
+        return display_resolution, display, led_count
     else:
-        return display_resolution, strip
+        return display_resolution, display
 
 
 def main(x_boxes=5, y_boxes=3):
     """initializing folders, filelock, background gifs and runing the display"""
 
-    display_resolution, strip = init(x_boxes, y_boxes)
+    display_resolution, display = init(x_boxes, y_boxes)
 
 
     #Setup Media Wait list
@@ -170,7 +170,7 @@ def main(x_boxes=5, y_boxes=3):
     mylist = [f[:-4] for f in glob.glob(f"{config.work_dir}/backgrounds/*.gif")]
 
     while mylist:
-        display_gif(strip, random.choice(mylist), display_resolution, lock)
+        display_gif(display, random.choice(mylist), display_resolution, lock)
 
     if not mylist:
         sys.exit(f"No gif in {config.work_dir}/backgrounds")
