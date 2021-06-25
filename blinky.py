@@ -146,14 +146,16 @@ def main(x_boxes=5, y_boxes=3):
 
     while display.is_running():
         waiting_line = glob.glob(f"{config.work_dir}/gifs/*.gif")
-        backgrounds = glob.glob(f"{config.work_dir}/backgrounds/*.gif")
+        mood = config.mood.get()
+        backgrounds = glob.glob(f"{config.work_dir}/backgrounds/{mood}/*.gif")
         try:
             next_gif = q.take() or random.choice(backgrounds)
+            display_gif(display, next_gif, display_resolution)
         except:
-            logger.error(f"No gif in {config.work_dir}/backgrounds or {config.work_dir}/gifs")
-            sys.exit(1)
+            logger.error(f"No gif in {config.work_dir}/backgrounds/{mood} or {config.work_dir}/gifs")
+            time.sleep(1)
+            #_sys.exit(1)
 
-        display_gif(display, next_gif, display_resolution)
 
 if __name__ == '__main__':
     logger.info('############################################')
