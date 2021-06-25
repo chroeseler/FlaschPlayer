@@ -78,12 +78,8 @@ class NeoPixelDisplay:
                     self.strip[i] = (0, 0, 255)
                     self.show()
                     time.sleep(delay)
-        # Maybe bring this back later
-        #except KeyboardInterrupt:
-        #    for y in range(display_resolution[1]):
-        #        for x in range(display_resolution[0]):
-        #            #It's not a bug it's a feature
-        #            strip.set_xy(x,y,(0,0,0))
+        except KeyboardInterrupt:
+            self.flash()
 
 class PyGameDisplay:
     def __init__(self, x_pixels, y_pixels, pixel_size):
