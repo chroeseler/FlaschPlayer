@@ -2,6 +2,7 @@ import os
 import logging
 import board
 import layout
+import time
 import numpy as np
 import pygame as pg
 
@@ -25,6 +26,7 @@ class NeoPixelDisplay:
         else:
             self.strip = [None]*led_count
         self.matrix = layout.full_layout(x_boxes, y_boxes, vert=True)
+        self.led_count = led_count
 
     def is_running(self):
         return True
@@ -37,6 +39,51 @@ class NeoPixelDisplay:
         led_id = self.matrix[y][x]
         logger.debug(f'set_xy x: {x}, y: {y}, val: {value}, id: {led_id}')
         self.strip[led_id] = value
+
+    def flash(self):
+        for i in range(self.led_count):
+            self.strip[i] = (255, 255, 255)
+        self.show()
+        time.sleep(0.5)
+        for i in range(self.led_count):
+            self.strip[i] = (0, 0, 0)
+        self.show()
+        time.sleep(0.5)
+        for i in range(self.led_count):
+            self.strip[i] = (255, 255, 255)
+        self.show()
+        time.sleep(0.5)
+        for i in range(self.led_count):
+            self.strip[i] = (0, 0, 0)
+        self.show()
+
+    def run_debug(self):
+        # TODO implement this as method on NeoPixelDisplay implementation
+        delay = 0.05
+        try:
+            while True:
+                for i in range(self.led_count):
+                    self.strip[i] = (255, 255, 255)
+                    self.show()
+                    time.sleep(delay)
+                for i in range(self.led_count):
+                    self.strip[i] = (255, 0, 0)
+                    self.show()
+                    time.sleep(delay)
+                for i in range(self.led_count):
+                    self.strip[i] = (0, 255, 0)
+                    self.show()
+                    time.sleep(delay)
+                for i in range(self.led_count):
+                    self.strip[i] = (0, 0, 255)
+                    self.show()
+                    time.sleep(delay)
+        # Maybe bring this back later
+        #except KeyboardInterrupt:
+        #    for y in range(display_resolution[1]):
+        #        for x in range(display_resolution[0]):
+        #            #It's not a bug it's a feature
+        #            strip.set_xy(x,y,(0,0,0))
 
 class PyGameDisplay:
     def __init__(self, x_pixels, y_pixels, pixel_size):
