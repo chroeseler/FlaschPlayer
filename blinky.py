@@ -63,7 +63,9 @@ def display_gif(display, filepath, display_resolution):
                 if not display.is_running():
                     break
                 runtime += frame.info['duration']
+                logger.info(f"Start {frame.info['duration']}")
                 draw_frame(frame)
+                logger.info('end')
                 if should_abort():
                     break
 
@@ -146,13 +148,16 @@ def main(x_boxes=5, y_boxes=3):
         mood = config.mood.get()
         backgrounds = glob.glob(f"{config.work_dir}/backgrounds/{mood}/*.gif")
         try:
-            next_gif = q.take() or random.choice(backgrounds)
+            next_gif = q.take()
+            if not next_gif:
+                next_gif = random.choice(backgrounds)
             display_gif(display, next_gif, display_resolution)
         except KeyboardInterrupt:
             logger.info("Interrupted, exit, over and out")
             sys.exit()
-        except:
+        except Exception as e:
             logger.error(f"No gif in {config.work_dir}/backgrounds/{mood} or {config.work_dir}/gifs")
+            logger.error(traceback.format_exec())
             time.sleep(1)
 
 
