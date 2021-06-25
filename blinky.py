@@ -58,6 +58,8 @@ def display_gif(display, path_to_gif, display_resolution, lock):
         else:
             time.sleep(0.1)
 
+    def move_media(media):
+        os.rename(f'{config.work_dir}/gifs/{media}.gif', f'{config.work_dir}/graveyard/{time.time()}.gif')
 
     background_gif = Image.open(path_to_gif + '.gif')
     logger.info(f'Back: {path_to_gif}.gif')
@@ -88,8 +90,7 @@ def display_gif(display, path_to_gif, display_resolution, lock):
                     #photos in gif container get shown 5 seconds
                     for _ in range(50):
                         draw_frame(foreground_gif, display_resolution, bright)
-                os.rename(f'{config.work_dir}/gifs/{media}.gif',
-                          f'{config.work_dir}/graveyard/{time.time()}.gif')
+                move_media(media)
             waiting_line = update_line(lock)
 
 
