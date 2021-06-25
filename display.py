@@ -4,7 +4,6 @@ import board
 import layout
 import time
 import numpy as np
-import pygame as pg
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("blinky.display")
@@ -86,6 +85,8 @@ class NeoPixelDisplay:
 
 class PyGameDisplay:
     def __init__(self, x_pixels, y_pixels, pixel_size):
+        self.pg = __import__("pygame")
+        pg = self.pg
         pg.init()
         surface_x = x_pixels * pixel_size
         surface_y = y_pixels * pixel_size
@@ -102,6 +103,7 @@ class PyGameDisplay:
         return self.running
 
     def process_events(self):
+        pg = self.pg
         for event in pg.event.get():
             logger.debug(event)
             if event.type == pg.QUIT:
@@ -110,6 +112,7 @@ class PyGameDisplay:
                 pg.quit()
 
     def show(self):
+        pg = self.pg
         del self.ar
         screen = pg.display.get_surface()
         screen.blit(self.surface, (0, 0))
