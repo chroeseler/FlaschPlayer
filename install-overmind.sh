@@ -13,4 +13,4 @@ curl -L "$url" -O
 gunzip "${file}.gz"
 
 chmod +x "$file"
-echo mv "$file" /usr/local/bin/
+mv "$file" /usr/local/bin/
