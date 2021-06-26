@@ -173,8 +173,8 @@ def main():
             sys.exit(0)
         except Exception as e:
             es = traceback.format_exc()
-            logger.error(f"Error: {str(e)}\n{es}")
-            po.send(f"Error: {str(e)}\n{es}")
+            logger.error(f"Error from Telegram Polling: {str(e)}\n{es}")
+            po.send(f"Error from Telegram Polling: {str(e)}\n{es}")
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
