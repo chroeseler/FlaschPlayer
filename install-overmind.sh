@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 version="v2.2.2"
-file="overmind-${version}-linux-arm64"
+file="overmind-${version}-linux-arm"
 url="https://github.com/DarthSim/overmind/releases/download/${version}/${file}.gz"
 
 # cleanup
