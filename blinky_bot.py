@@ -61,7 +61,18 @@ def brightness(update, context):
 def mood(update, context):
     """Send a message when the command /mood is issued."""
     config.mood.set(context.args[0])
+    config.playlistmode.set("mood")
     update.message.reply_text(f"Mood set {context.args[0]}")
+
+def play(update, context):
+    """Send a message when the command /mood is issued."""
+    if context.args:
+        config.pattern.set(context.args[0])
+        config.playlistmode.set("pattern")
+        update.message.reply_text(f"Playing anything matching {context.args[0]} — note that it may not match anything")
+    else:
+        update.message.reply_text("You need to provide something to select GIFs from our catalogue")
+
 
 def echo(update, context):
     """Echo the user message."""
@@ -148,6 +159,7 @@ def make_updater():
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler("brightness", brightness))
     dp.add_handler(CommandHandler("mood", mood))
+    dp.add_handler(CommandHandler("play", play))
 
     dp.add_handler(MessageHandler(Filters.voice, voice_handler))
     dp.add_handler(MessageHandler(Filters.photo, image_handler))
