@@ -131,6 +131,14 @@ def init(x_boxes, y_boxes, n_led=False):
     else:
         return display_resolution, display
 
+def matches_pattern(filepath, pattern):
+    filepath = filepath.lower()
+    tokens = pattern.lower().split(" ")
+    matches = True
+    for token in tokens:
+        if token not in filepath:
+            matches = False
+    return matches
 
 def main(x_boxes=5, y_boxes=3):
     """initializing folders, background gifs and runing the display"""
@@ -147,7 +155,14 @@ def main(x_boxes=5, y_boxes=3):
     while display.is_running():
         waiting_line = glob.glob(f"{config.work_dir}/gifs/*.gif")
         mood = config.mood.get()
-        backgrounds = glob.glob(f"{config.work_dir}/backgrounds/{mood}/*.gif")
+        pattern = config.pattern.get()
+        if config.playlistmode.get() == "mood":
+            backgrounds = glob.glob(f"{config.work_dir}/backgrounds/{mood}/*.gif")
+        else:
+            backgrounds = glob.glob(f"{config.work_dir}/backgrounds/*/*.gif")
+            backgrounds = list(filter(lambda f : matches_pattern(f, pattern), backgrounds))
+            if not backgrounds:
+                backgrounds = backgrounds = glob.glob(f"{config.work_dir}/backgrounds/default/*.gif")
         try:
             next_gif = q.take()
             if not next_gif:
