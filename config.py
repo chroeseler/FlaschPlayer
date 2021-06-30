@@ -37,12 +37,13 @@ class ConfigVar:
         logger.info("Setting config %s to %s", self.key, val)
         set_config(self.key, str(val))
 
-def coerce(x):
+def coerce_str(x):
     if isinstance(x, str):
         return x
     else:
         return x.decode('utf-8')
 
-
 brightness = ConfigVar("brightness", 1, float)
-mood = ConfigVar("mood", "default", coerce)
+playlistmode = ConfigVar("playlistmode", "mood", coerce_str)
+mood = ConfigVar("mood", "default", coerce_str)
+pattern = ConfigVar("pattern", "default", coerce_str)
