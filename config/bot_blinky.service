@@ -1,0 +1,11 @@
+[Unit]
+Description=Starting blinky_bot.py
+
+[Service]
+Type=simple
+ExecStart=/path/to/venv/bin/python3 /path/to/work_dir/blinky_bot.py
+Restart=always
+StartLimitBurst=36000
+User=root
+Environment="BOT_TOKEN=TOKEN"
+Environment="WORK_DIR=/path/to/work_dir"
