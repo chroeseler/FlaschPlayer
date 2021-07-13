@@ -44,11 +44,14 @@ class NeoPixelDisplay:
         led_id = self.matrix[y][x]
         logger.debug(f'set_xy x: {x}, y: {y}, val: {value}, id: {led_id}')
         new_value = []
+        dark = True
         for x in value:
             if x > 3:
-                new_value.append(x)
-            else:
-                new_value.append(0)
+                dark = False
+        if dark:
+            new_value = (0, 0, 0)
+        else:
+            new_value = value
 
         self.strip[led_id] =  tuple(self.brightness * x  for x in new_value)
 
