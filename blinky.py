@@ -63,10 +63,7 @@ def display_gif(display, filepath, display_resolution):
                 if not display.is_running():
                     break
                 runtime += frame.info['duration']
-                # PERFORMANCE DEBUG
-                # logger.info(f"Start {frame.info['duration']}")
                 draw_frame(frame)
-                # logger.info('end')
                 if should_abort():
                     break
 
