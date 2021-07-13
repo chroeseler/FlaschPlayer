@@ -43,7 +43,14 @@ class NeoPixelDisplay:
     def set_xy(self, x, y, value):
         led_id = self.matrix[y][x]
         logger.debug(f'set_xy x: {x}, y: {y}, val: {value}, id: {led_id}')
-        self.strip[led_id] =  tuple(self.brightness * x for x in value)
+        new_value = []
+        for x in value:
+            if x > 3:
+                new_value.append(x)
+            else:
+                new_value.append(0)
+
+        self.strip[led_id] =  tuple(self.brightness * x  for x in new_value)
 
     def flash(self):
         for i in range(self.led_count):
