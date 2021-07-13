@@ -26,6 +26,7 @@ from PIL import Image
 from ffmpy import FFmpeg
 import os
 import sys
+from signal import signal, SIGINT
 import config
 import thequeue as q
 import glob
@@ -60,7 +61,18 @@ def brightness(update, context):
 def mood(update, context):
     """Send a message when the command /mood is issued."""
     config.mood.set(context.args[0])
+    config.playlistmode.set("mood")
     update.message.reply_text(f"Mood set {context.args[0]}")
+
+def play(update, context):
+    """Send a message when the command /mood is issued."""
+    if context.args:
+        config.pattern.set(context.args[0])
+        config.playlistmode.set("pattern")
+        update.message.reply_text(f"Playing anything matching {context.args[0]} — note that it may not match anything")
+    else:
+        update.message.reply_text("You need to provide something to select GIFs from our catalogue")
+
 
 def echo(update, context):
     """Echo the user message."""
@@ -133,16 +145,10 @@ def put_gifs(telegram_file):
     except Exception as e:
         logger.error(traceback.format_exec())
 
-
-def main():
-    """Start the bot."""
-    # Create the Updater and pass it your bot's token.
-    # Make sure to set use_context=True to use the new context based callbacks
-    # Post version 12 this will no longer be necessary
-    logger.info("Setting up queue")
-    q.setup()
+def make_updater():
     token = os.environ['BOT_TOKEN']
     logger.info(f'Token: {token}')
+
     updater = Updater(token, use_context=True)
 
     # Get the dispatcher to register handlers
@@ -153,6 +159,7 @@ def main():
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler("brightness", brightness))
     dp.add_handler(CommandHandler("mood", mood))
+    dp.add_handler(CommandHandler("play", play))
 
     dp.add_handler(MessageHandler(Filters.voice, voice_handler))
     dp.add_handler(MessageHandler(Filters.photo, image_handler))
@@ -164,23 +171,46 @@ def main():
     # log all errors
     dp.add_error_handler(error)
 
-    # Start the Bot
-    while True:
-        try:
-            updater.start_polling()
-            updater.idle()
-        except KeyboardInterrupt:
-            sys.exit(0)
-        except Exception as e:
-            es = traceback.format_exc()
-            logger.error(f"Error: {str(e)}\n{es}")
-            po.send(f"Error: {str(e)}\n{es}")
+    return updater
 
-    # Run the bot until you press Ctrl-C or the process receives SIGINT,
-    # SIGTERM or SIGABRT. This should be used most of the time, since
-    # start_polling() is non-blocking and will stop the bot gracefully.
+stopped = False
 
+class System:
+    def __init__(self):
+        """Start the bot."""
+        # Create the Updater and pass it your bot's token.
+        # Make sure to set use_context=True to use the new context based callbacks
+        # Post version 12 this will no longer be necessary
+        logger.info('##########################   bot  #########')
+        logger.info("Setting up queue")
+        q.setup()
+        self.updater = make_updater()
+
+    def start(self):
+        self.updater.start_polling()
+
+    def stop(self):
+        global stopped
+        if not stopped:
+            stopped = 1
+            self.updater.stop() # this function can take seconds!
+            self.updater.idle()
+        else:
+            logger.info("Stop already initiated")
 
 if __name__ == '__main__':
-    logger.info('##########################   bot  #########')
-    main()
+
+    s = System()
+    def handler(signal_received, frame):
+        # Handle any cleanup here
+        logger.info('SIGINT or CTRL-C detected. Exiting gracefully')
+        s.stop()
+        sys.exit(0)
+
+    signal(SIGINT, handler)
+
+    print('Running. Press CTRL-C to exit.')
+    s.start()
+    while True:
+      # Do nothing and hog CPU forever until SIGINT received.
+      pass
