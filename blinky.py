@@ -16,6 +16,11 @@ import config
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("blinky.led")
 
+TEXT = None
+queue_txt = f"{config.work_dir}/text_queue.txt"
+lock = FileLock(f"{queue_txt}.lock")
+
+
 def display_gif(display, filepath, display_resolution):
     """Main action point
 
@@ -32,6 +37,12 @@ def display_gif(display, filepath, display_resolution):
         for y in range(display_resolution[1]):
             for x in range(display_resolution[0]):
                 display.set_xy(x,y, rgb_frame.getpixel((x, y)))
+        text = next(TEXT, None)
+        if not text and txt.has_items():
+            fill_text()
+            text = next(TEXT, None)
+        if text:
+            write_text()
         if display.is_running():
             display.show()
         else:
@@ -40,6 +51,12 @@ def display_gif(display, filepath, display_resolution):
             if isinstance(frame.info['duration'], int):
                 if frame.info['duration'] > 100:
                     time.sleep((frame.info['duration'] - 100) / 1000)
+
+    def fill_text():
+        global TEXT
+        with lock:
+            text = list(letters.pop(queue_txt))
+        TEXT = text_generator(text)
 
     def bury_in_graveyard():
         os.rename(filepath, f'{config.work_dir}/graveyard/{time.time()}.gif')
@@ -54,6 +71,14 @@ def display_gif(display, filepath, display_resolution):
 
     def should_abort():
         return is_background() and q.has_items()
+
+    def text_generator(text):
+        #TODO get x_boxes value 
+        x_boxes = 5
+        for dot in text:
+            text.append((coords(0)+(x_boxes*4), coords(1)))
+        for state in text:
+            yield state
 
     def loop_gif(image, duration):
         runtime = 0

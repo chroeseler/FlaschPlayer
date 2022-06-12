@@ -29,6 +29,7 @@ import sys
 from signal import signal, SIGINT
 import config
 import thequeue as q
+import textqueue as txt
 import glob
 
 gif_counter = 0
@@ -72,6 +73,14 @@ def play(update, context):
         update.message.reply_text(f"Playing anything matching {context.args[0]} — note that it may not match anything")
     else:
         update.message.reply_text("You need to provide something to select GIFs from our catalogue")
+
+def text(update. context):
+    """Writing text ontop of what is playing if issued with the /text command"""
+    if context.args:
+        if len(context.args) > 50:
+            update.message.reply_text("Sorry that's quite the text and I'm a little lazy. Can you make it shorter?")
+        else:
+            txt.put(context.args)
 
 
 def echo(update, context):
@@ -160,6 +169,7 @@ def make_updater():
     dp.add_handler(CommandHandler("brightness", brightness))
     dp.add_handler(CommandHandler("mood", mood))
     dp.add_handler(CommandHandler("play", play))
+    dp.add_handler(CommandHandler("text", text))
 
     dp.add_handler(MessageHandler(Filters.voice, voice_handler))
     dp.add_handler(MessageHandler(Filters.photo, image_handler))
@@ -182,8 +192,9 @@ class System:
         # Make sure to set use_context=True to use the new context based callbacks
         # Post version 12 this will no longer be necessary
         logger.info('##########################   bot  #########')
-        logger.info("Setting up queue")
+        logger.info("Setting up queues")
         q.setup()
+        txt.setup()
         self.updater = make_updater()
 
     def start(self):
