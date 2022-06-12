@@ -8,6 +8,7 @@ import glob
 import ast
 import board
 import thequeue as q
+import text_queue as txt
 import display as d
 from PIL import Image, ImageSequence
 import layout
@@ -17,8 +18,6 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger("blinky.led")
 
 TEXT = None
-queue_txt = f"{config.work_dir}/text_queue.txt"
-lock = FileLock(f"{queue_txt}.lock")
 
 
 def display_gif(display, filepath, display_resolution):
@@ -37,12 +36,7 @@ def display_gif(display, filepath, display_resolution):
         for y in range(display_resolution[1]):
             for x in range(display_resolution[0]):
                 display.set_xy(x,y, rgb_frame.getpixel((x, y)))
-        text = next(TEXT, None)
-        if not text and txt.has_items():
-            fill_text()
-            text = next(TEXT, None)
-        if text:
-            write_text()
+        write_text()
         if display.is_running():
             display.show()
         else:
@@ -52,11 +46,35 @@ def display_gif(display, filepath, display_resolution):
                 if frame.info['duration'] > 100:
                     time.sleep((frame.info['duration'] - 100) / 1000)
 
-    def fill_text():
+    def write_text():
         global TEXT
-        with lock:
-            text = list(letters.pop(queue_txt))
-        TEXT = text_generator(text)
+        def write(text):
+            for coord in text:
+                display.set_xy(coord[0], coord[1], (255,255,255))
+        if (text := next(TEXT, None)):
+            write(text)
+        elif txt.has_items():
+            text = txt.pop()
+            TEXT = text_generator(text)
+            text = next(TEXT, None)
+            write(text)
+
+    def text_generator(text):
+        """The generator gets a list with the dot coordinates of the text letters
+        They get all moves on the x axis to the be outside on the of the display
+        and then get moved one x coordnate per yield. If a x coordinate reaches 0
+        it gets removes from the list. The generator stops if the list is empty"""
+        #TODO get x_boxes value 
+        x_boxes = 5
+        for dot in range(len(text)):
+            text[dot][0] += x_boxes*4
+        while text:
+            for dot in range(len(text)):
+                if text[dot][0] == 0:
+                    del text[dot]
+                else:
+                    text[dot][0] -= 1
+            yield text
 
     def bury_in_graveyard():
         os.rename(filepath, f'{config.work_dir}/graveyard/{time.time()}.gif')
@@ -71,14 +89,6 @@ def display_gif(display, filepath, display_resolution):
 
     def should_abort():
         return is_background() and q.has_items()
-
-    def text_generator(text):
-        #TODO get x_boxes value 
-        x_boxes = 5
-        for dot in text:
-            text.append((coords(0)+(x_boxes*4), coords(1)))
-        for state in text:
-            yield state
 
     def loop_gif(image, duration):
         runtime = 0
