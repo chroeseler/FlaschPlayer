@@ -35,26 +35,13 @@ def has_items():
     with open(queue_txt, 'r') as fin:
         return fin.readline()
 
-def pop(file):
-    with open(file, 'r+') as f: # open file in read / write mode
-        firstLine = f.readline() # read the first line and throw it out
-        data = f.read() # read the rest
-        f.seek(0) # set the cursor to the top of the file
-        f.write(data) # write the data back
-        f.truncate() # set the file size to the current size
-        return firstLine
-
-
-
-def take():
+def pop():
     with lock:
-        with open(queue_txt, 'r') as fin:
-            data = fin.read().splitlines(True)
-        with open(queue_txt, 'w') as fout:
-            fout.writelines(data[1:])
-        if data:
-            logger.info("Took: %s", data[0].strip())
-            return data[0].strip()
-        else:
-            logger.info("No item in queue")
-            return None
+        with open(queue_txt, 'r+') as f: # open file in read / write mode
+            firstLine = f.readline() # read the first line and throw it out
+            data = f.read() # read the rest
+            f.seek(0) # set the cursor to the top of the file
+            f.write(data) # write the data back
+            f.truncate() # set the file size to the current size
+            return firstLine
+
