@@ -15,7 +15,7 @@ Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
 import logging
-import pushover as po
+#import pushover as po
 
 from telegram import Bot
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
@@ -110,7 +110,7 @@ def error(update, context):
     logger.warning('Update "%s" caused error "%s"', update, context.error)
     error = traceback.format_exc()
     logger.error(f"Error: {str(context.error)}\n{error}")
-    po.send(f"Error: {str(context.error)}\n{error}")
+    #po.send(f"Error: {str(context.error)}\n{error}")
 
 def gif_handler(update, context):
     logger.info(f'Starting Gif Handler')
@@ -147,7 +147,7 @@ def put_gifs(telegram_file):
             logger.warning(f'Gif creation failed: {out}')
     except Exception as e:
         logger.warning('FFmpeg Error!')
-        po.send(f"ffmpeg error\n{traceback.format_exec()}")
+        #po.send(f"ffmpeg error\n{traceback.format_exec()}")
     try:
         q.mark_ready(out)
         gif_counter += 1

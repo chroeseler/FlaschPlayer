@@ -14,7 +14,6 @@ from PIL import Image, ImageSequence
 import layout
 import config
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("blinky.led")
 
 TEXT = None
@@ -205,7 +204,6 @@ def main(x_boxes=5, y_boxes=3):
             sys.exit()
         except Exception as e:
             logger.error(f"No gif in {config.work_dir}/backgrounds/{mood} or {config.work_dir}/gifs")
-            logger.error(traceback.format_exec())
             time.sleep(1)
 
 

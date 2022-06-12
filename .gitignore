@@ -5,3 +5,10 @@ data/queue.txt.lock
 data/config/settings
 data/graveyard/*
 data/gifs/*
+
+backgrounds
+config/settings
+.envrc
+graveyard
+queue.txt
+queue.txt.lock
