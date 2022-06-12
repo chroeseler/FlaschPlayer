@@ -18,7 +18,7 @@ def put(text):
     def add_char_coord(char, width, text):
         char_dict = letters.dotting(char)
         for coords in char_dict['dots']:
-            text.append((coords(0)+width, coords(1)))
+            text.append([coords(0)+width, coords(1)])
         width += char_dict['size'][0]
         return text, width
 
