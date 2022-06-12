@@ -33,7 +33,7 @@ def put(text):
 def has_items():
     #TODO check empty file
     with open(queue_txt, 'r') as fin:
-        return fin.read().splitlines(True)
+        return fin.readline()
 
 def pop(file):
     with open(file, 'r+') as f: # open file in read / write mode
