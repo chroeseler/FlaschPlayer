@@ -30,11 +30,6 @@ def put(text):
         with open(queue_txt, 'a') as f:
             f.write(str(text_matrix) + '\n')
 
-def mark_ready(path):
-    with lock:
-        logger.info("Queuing: %s", path)
-        open(queue_txt, "a").write(path + "\n")
-
 def has_items():
     #TODO check empty file
     with open(queue_txt, 'r') as fin:
