@@ -14,5 +14,9 @@ def dotting(path):
     letter_matrix['size'] = dots.size
     return letter_matrix
 
+def get_coords(char):
+    if char in ['O']:
+        return dotting(char)
+
 if __name__ == '__main__':
     print(dotting(sys.argv[1]))
