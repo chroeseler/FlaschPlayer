@@ -29,7 +29,7 @@ import sys
 from signal import signal, SIGINT
 import config
 import thequeue as q
-import textqueue as txt
+import text_queue as txt
 import glob
 
 gif_counter = 0
@@ -74,13 +74,13 @@ def play(update, context):
     else:
         update.message.reply_text("You need to provide something to select GIFs from our catalogue")
 
-def text(update. context):
+def text(update, context):
     """Writing text ontop of what is playing if issued with the /text command"""
     if context.args:
         if len(context.args) > 50:
             update.message.reply_text("Sorry that's quite the text and I'm a little lazy. Can you make it shorter?")
         else:
-            txt.put(context.args)
+            txt.put(' '.join(context.args))
 
 
 def echo(update, context):

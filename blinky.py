@@ -50,13 +50,16 @@ def display_gif(display, filepath, display_resolution):
         def write(text):
             for coord in text:
                 display.set_xy(coord[0], coord[1], (255,255,255))
-        if (text := next(TEXT, None)):
-            write(text)
-        elif txt.has_items():
+        if not TEXT and txt.has_items():
             text = txt.pop()
             TEXT = text_generator(text)
             text = next(TEXT, None)
             write(text)
+        elif TEXT is not None:
+            if (text := next(TEXT, None)):
+                write(text)
+            else:
+                TEXT = None
 
     def text_generator(text):
         """The generator gets a list with the dot coordinates of the text letters
@@ -64,15 +67,18 @@ def display_gif(display, filepath, display_resolution):
         and then get moved one x coordnate per yield. If a x coordinate reaches 0
         it gets removes from the list. The generator stops if the list is empty"""
         #TODO get x_boxes value 
+        logger.info(text)
         x_boxes = 5
         for dot in range(len(text)):
             text[dot][0] += x_boxes*4
         while text:
+            remove = []
             for dot in range(len(text)):
                 if text[dot][0] == 0:
-                    del text[dot]
+                    remove.append(text[dot])
                 else:
                     text[dot][0] -= 1
+            text = [ x for x in text if (x not in remove) ]
             yield text
 
     def bury_in_graveyard():
@@ -203,7 +209,7 @@ def main(x_boxes=5, y_boxes=3):
             logger.info("Interrupted, exit, over and out")
             sys.exit()
         except Exception as e:
-            logger.error(f"No gif in {config.work_dir}/backgrounds/{mood} or {config.work_dir}/gifs")
+            logger.exception(f"No gif in {config.work_dir}/backgrounds/{mood} or {config.work_dir}/gifs")
             time.sleep(1)
 
 

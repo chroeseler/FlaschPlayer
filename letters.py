@@ -1,5 +1,8 @@
 import sys
 from PIL import Image
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def dotting(path):
@@ -15,8 +18,10 @@ def dotting(path):
     return letter_matrix
 
 def get_coords(char):
-    if char in ['O']:
-        return dotting(char)
+    if ord(char) == 79:
+        return dotting('letter/79.png')
+    else:
+        return None
 
 if __name__ == '__main__':
     print(dotting(sys.argv[1]))

@@ -3,32 +3,34 @@ import logging
 import config
 import numpy as np
 import letters
+import json
 
 queue_txt = f"{config.work_dir}/text_queue.txt"
 lock = FileLock(f"{queue_txt}.lock")
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-logger = logging.getLogger("blinky.text_queue")
-logging.getLogger("filelock").setLevel(logging.WARN)
+logger = logging.getLogger(__name__)
 
 def setup():
     open(queue_txt,"a").write("")
 
 def put(text):
     def add_char_coord(char, width, text):
-        char_dict = letters.dotting(char)
-        for coords in char_dict['dots']:
-            text.append([coords(0)+width, coords(1)])
-        width += char_dict['size'][0]
+        if (char_dict := letters.get_coords(char)):
+            for coords in char_dict['dots']:
+                text.append([coords[0]+width, coords[1]])
+            width += char_dict['size'][0]
         return text, width
 
+    logger.info(text)
     text_matrix = []
     width = 0
     for character in text:
         text_matrix, width = add_char_coord(character, width, text_matrix)
-    with lock:
-        with open(queue_txt, 'a') as f:
-            f.write(str(text_matrix) + '\n')
+    if width > 0:
+        with lock:
+            with open(queue_txt, 'a') as f:
+                json.dump(text_matrix, f)
+                f.write('\n')
 
 def has_items():
     #TODO check empty file
@@ -43,5 +45,5 @@ def pop():
             f.seek(0) # set the cursor to the top of the file
             f.write(data) # write the data back
             f.truncate() # set the file size to the current size
-            return firstLine
+            return json.loads(firstLine)
 
