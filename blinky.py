@@ -67,17 +67,22 @@ def display_gif(display, filepath, display_resolution):
         and then get moved one x coordnate per yield. If a x coordinate reaches 0
         it gets removes from the list. The generator stops if the list is empty"""
         #TODO get x_boxes value 
+        frame_counter = 0
         for dot in range(len(text)):
             text[dot][0] += display_resolution[0]
         while text:
-            remove = []
-            for dot in range(len(text)):
-                if text[dot][0] == 0:
-                    remove.append(text[dot])
-                else:
-                    text[dot][0] -= 1
-            text = [ x for x in text if (x not in remove) ]
-            yield text
+            frame_counter += 1
+            if frame_counter % config.text_speed.get() != 0:
+                yield text
+            else:
+                remove = []
+                for dot in range(len(text)):
+                    if text[dot][0] == 0:
+                        remove.append(text[dot])
+                    else:
+                        text[dot][0] -= 1
+                text = [ x for x in text if (x not in remove) ]
+                yield text
 
     def bury_in_graveyard():
         os.rename(filepath, f'{config.work_dir}/graveyard/{time.time()}.gif')

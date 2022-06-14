@@ -51,6 +51,14 @@ def help(update, context):
     update.message.reply_text('Help!')
 
 
+def text_speed(update, context):
+    """Send a message when the command /text_speed is issued."""
+    if context.args and isinstance(int(context.args[0]), int):
+        config.text_speed.set(context.args[0])
+        update.message.reply_text(f"Text speed set to {context.args[0]}")
+    else:
+        update.message.reply_text(f"Text speed can only be a round number. Default is 70 e.g. /text_speed 70")
+
 def brightness(update, context):
     """Send a message when the command /brightness is issued."""
     if context.args:
@@ -167,6 +175,7 @@ def make_updater():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler("brightness", brightness))
+    dp.add_handler(CommandHandler("text_speed", text_speed))
     dp.add_handler(CommandHandler("mood", mood))
     dp.add_handler(CommandHandler("play", play))
     dp.add_handler(CommandHandler("text", text))
