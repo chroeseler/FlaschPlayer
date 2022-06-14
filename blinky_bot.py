@@ -84,11 +84,10 @@ def play(update, context):
 
 def text(update, context):
     """Writing text ontop of what is playing if issued with the /text command"""
-    if context.args:
-        if len(context.args) > 50:
-            update.message.reply_text("Sorry that's quite the text and I'm a little lazy. Can you make it shorter?")
-        else:
-            txt.put(' '.join(context.args))
+    if len(update.message.text) > 50:
+        update.message.reply_text("Sorry that's quite the text and I'm a little lazy. Can you make it shorter?")
+    else:
+        txt.put(update.message.text)
 
 
 def echo(update, context):
@@ -178,14 +177,13 @@ def make_updater():
     dp.add_handler(CommandHandler("text_speed", text_speed))
     dp.add_handler(CommandHandler("mood", mood))
     dp.add_handler(CommandHandler("play", play))
-    dp.add_handler(CommandHandler("text", text))
 
     dp.add_handler(MessageHandler(Filters.voice, voice_handler))
     dp.add_handler(MessageHandler(Filters.photo, image_handler))
     dp.add_handler(MessageHandler(Filters.document.mime_type("video/mp4"), gif_handler))
 
     # on noncommand i.e message - echo the message on Telegram
-    dp.add_handler(MessageHandler(Filters.text, echo))
+    dp.add_handler(MessageHandler(Filters.text, text))
 
     # log all errors
     dp.add_error_handler(error)
