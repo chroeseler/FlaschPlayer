@@ -52,7 +52,7 @@ def display_gif(display, filepath, display_resolution):
                 display.set_xy(coord[0], coord[1], (255,255,255))
         if not TEXT and txt.has_items():
             text = txt.pop()
-            TEXT = text_generator(text)
+            TEXT = text_generator(text, display_resolution)
             text = next(TEXT, None)
             write(text)
         elif TEXT is not None:
@@ -61,16 +61,14 @@ def display_gif(display, filepath, display_resolution):
             else:
                 TEXT = None
 
-    def text_generator(text):
+    def text_generator(text, display_resolution):
         """The generator gets a list with the dot coordinates of the text letters
         They get all moves on the x axis to the be outside on the of the display
         and then get moved one x coordnate per yield. If a x coordinate reaches 0
         it gets removes from the list. The generator stops if the list is empty"""
         #TODO get x_boxes value 
-        logger.info(text)
-        x_boxes = 5
         for dot in range(len(text)):
-            text[dot][0] += x_boxes*4
+            text[dot][0] += display_resolution[0]
         while text:
             remove = []
             for dot in range(len(text)):
