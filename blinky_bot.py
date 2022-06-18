@@ -84,7 +84,7 @@ def play(update, context):
 
 def text(update, context):
     """Writing text ontop of what is playing if issued with the /text command"""
-    if len(update.message.text) > 50:
+    if len(update.message.text) > 120:
         update.message.reply_text("Sorry that's quite the text and I'm a little lazy. Can you make it shorter?")
     else:
         txt.put(update.message.text)
