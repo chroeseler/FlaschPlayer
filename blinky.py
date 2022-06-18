@@ -32,10 +32,17 @@ def display_gif(display, filepath, display_resolution):
     def draw_frame(frame):
         rgb_frame = frame.convert('RGB')
         default_frame_rate = 0.1
+        txt = get_text()
         for y in range(display_resolution[1]):
             for x in range(display_resolution[0]):
-                display.set_xy(x,y, rgb_frame.getpixel((x, y)))
-        write_text()
+                if not txt:
+                    display.set_xy(x,y, rgb_frame.getpixel((x, y)))
+                else:
+                    old_rgb = list(rgb_frame.getpixel((x, y)))
+                    new_rgb = tuple([ x*0.15 for x in old_rgb ])
+                    display.set_xy(x,y, new_rgb)
+        if txt:
+            write_text(txt, display_resolution)
         if display.is_running():
             display.show()
         else:
@@ -45,21 +52,23 @@ def display_gif(display, filepath, display_resolution):
                 if frame.info['duration'] > 100:
                     time.sleep((frame.info['duration'] - 100) / 1000)
 
-    def write_text():
-        global TEXT
-        def write(text):
-            for coord in text:
+    def write_text(text, display_resolution):
+        for coord in text:
+            if coord[0] < display_resolution[0]:
                 display.set_xy(coord[0], coord[1], (255,255,255))
+    def get_text():
+        global TEXT
         if not TEXT and txt.has_items():
             text = txt.pop()
             TEXT = text_generator(text, display_resolution)
             text = next(TEXT, None)
-            write(text)
+            return text
         elif TEXT is not None:
             if (text := next(TEXT, None)):
-                write(text)
+                return text
             else:
                 TEXT = None
+                return None
 
     def text_generator(text, display_resolution):
         """The generator gets a list with the dot coordinates of the text letters
