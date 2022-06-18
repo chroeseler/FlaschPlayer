@@ -3,6 +3,7 @@ import time
 import os
 import logging
 import sys
+from pathlib import Path
 import random
 import glob
 import ast
@@ -17,6 +18,7 @@ import config
 logger = logging.getLogger("blinky.led")
 
 TEXT = None
+SKIP = Path(f'{config.work_dir}/config/skip')
 
 
 def display_gif(display, filepath, display_resolution):
@@ -105,6 +107,9 @@ def display_gif(display, filepath, display_resolution):
         return "backgrounds" in filepath
 
     def should_abort():
+        if SKIP.exists():
+            os.remove(SKIP)
+            return True
         return is_background() and q.has_items()
 
     def loop_gif(image, duration):

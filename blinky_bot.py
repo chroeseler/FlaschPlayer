@@ -24,6 +24,7 @@ import traceback
 
 from PIL import Image
 from ffmpy import FFmpeg
+from pathlib import Path
 import os
 import sys
 from signal import signal, SIGINT
@@ -89,6 +90,8 @@ def text(update, context):
     else:
         txt.put(update.message.text)
 
+def skip(update, context):
+    Path(f'{config.work_dir}/config/skip').touch()
 
 def echo(update, context):
     """Echo the user message."""
@@ -177,6 +180,7 @@ def make_updater():
     dp.add_handler(CommandHandler("text_speed", text_speed))
     dp.add_handler(CommandHandler("mood", mood))
     dp.add_handler(CommandHandler("play", play))
+    dp.add_handler(CommandHandler("skip", skip))
 
     dp.add_handler(MessageHandler(Filters.voice, voice_handler))
     dp.add_handler(MessageHandler(Filters.photo, image_handler))
