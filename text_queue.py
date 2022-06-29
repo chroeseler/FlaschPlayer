@@ -26,7 +26,7 @@ def put(text):
             width += char_dict['size'][0]
         return text, width+1
 
-    logger.info(text)
+    logger.info('Adding "%s" to text queue', text)
     text_matrix = []
     width = 0
     for character in text:
@@ -56,17 +56,20 @@ def dotting(path):
     img = Image.open(path)
     dots = img.convert('L')
     letter_matrix = {'dots': []}
-    for x in range(20):
-        for y in range(15):
-            if (g_scale_value := dots.getpixel((x,y))) == 0:
-                letter_matrix['dots'].append((x,y))
+    furthest_x = 0
+    for x in range(img.size[0]):
+        for y in range(img.size[1]):
+            g_scale_value = dots.getpixel((x,y))
+            if g_scale_value > 100:
+                furthest_x = x
+                letter_matrix['dots'].append((x,y+2))
 
-    letter_matrix['size'] = dots.size
+    letter_matrix['size'] = (furthest_x, dots.size[1])
     return letter_matrix
 
 def get_coords(char):
     try:
-        return dotting(LETTERS.joinpath(str(ord(char))+'.png'))
+        return dotting(LETTERS.joinpath('thin4_' + '{:05d}'.format(ord(char))+'.png'))
     except FileNotFoundError:
         logger.info('Letter not found')
         return None
