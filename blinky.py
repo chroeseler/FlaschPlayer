@@ -66,7 +66,8 @@ def display_gif(display, filepath, display_resolution):
             text = next(TEXT, None)
             return text
         elif TEXT is not None:
-            if (text := next(TEXT, None)):
+            text = next(TEXT, None)
+            if text:
                 return text
             else:
                 TEXT = None
