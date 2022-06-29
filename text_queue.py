@@ -19,10 +19,12 @@ def setup():
 def put(text):
     def add_char_coord(char, width, text):
         if (char_dict := get_coords(char)):
+        if ord(char) == 32:
+            return text, width+3
             for coords in char_dict['dots']:
                 text.append([coords[0]+width, coords[1]])
             width += char_dict['size'][0]
-        return text, width
+        return text, width+1
 
     logger.info(text)
     text_matrix = []
