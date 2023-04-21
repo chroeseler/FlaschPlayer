@@ -12,3 +12,6 @@ config/settings
 graveyard
 queue.txt
 queue.txt.lock
+letter_broken
+text_queue.txt
+text_queue.txt.lock
