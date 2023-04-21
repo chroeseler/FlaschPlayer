@@ -2,7 +2,6 @@ import os
 import logging
 import dbm
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("blinky.config")
 
 work_dir = os.environ['WORK_DIR']
@@ -13,19 +12,19 @@ waiting_line = work_dir + "/config/waiting_line"
 
 waiting_line_lock = work_dir + "/config/waiting_line.lock"
 
-def get_config(param):
+def get_config(param: str) -> str:
     with dbm.open(f'{work_dir}/config/settings', 'c') as db:
         return db[param]
 
-def set_config(param, value):
+def set_config(param: str, value: str) -> None:
     with dbm.open(f'{work_dir}/config/settings', 'c') as db:
-        db[param] = str(value)
+        db[param] = value
 
 class ConfigVar:
-    def __init__(self, key, default, coerce_fn):
+    def __init__(self, key, default, coerce_fn) -> None:
         self.key = key
-        self.coerce_fn = coerce_fn
         self.default = default
+        self.coerce_fn = coerce_fn
 
     def get(self):
         try:
@@ -33,15 +32,14 @@ class ConfigVar:
         except KeyError:
             return self.coerce_fn(self.default)
 
-    def set(self, val):
+    def set(self, val: str):
         logger.info("Setting config %s to %s", self.key, val)
-        set_config(self.key, str(val))
+        set_config(self.key, val)
 
-def coerce_str(x):
+def coerce_str(x) -> str:
     if isinstance(x, str):
         return x
-    else:
-        return x.decode('utf-8')
+    return x.decode('utf-8')
 
 brightness = ConfigVar("brightness", 1, float)
 playlistmode = ConfigVar("playlistmode", "mood", coerce_str)

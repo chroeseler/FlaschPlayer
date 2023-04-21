@@ -6,19 +6,8 @@ import layout
 import time
 import numpy as np
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("blinky.display")
 
-class MockDisplay:
-    def __init__(self, led_count):
-        self.width = 20
-        self.height = 15
-
-    def show(self):
-        logger.info(self.width, "x", self.height)
-
-    def set_xy(self, x, y):
-        logger.info(f'x: {x}, y: {y}')
 
 class NeoPixelDisplay:
     def __init__(self, led_count, x_boxes, y_boxes):
@@ -42,11 +31,11 @@ class NeoPixelDisplay:
 
     def set_xy(self, x, y, value):
         led_id = self.matrix[y][x]
-        logger.debug(f'set_xy x: {x}, y: {y}, val: {value}, id: {led_id}')
+        logger.debug('set_xy x: %s, y: %s, val: %s, id: %s', x, y, value, led_id)
         new_value = []
         dark = True
-        for x in value:
-            if x > 3:
+        for color in value:
+            if color > 3:
                 dark = False
         if dark:
             new_value = (0, 0, 0)

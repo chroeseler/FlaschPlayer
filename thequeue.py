@@ -1,40 +1,39 @@
-from filelock import Timeout, FileLock
 import logging
+import os
+from filelock import FileLock
 import config
 
 queue_txt = f"{config.work_dir}/queue.txt"
 lock = FileLock(f"{queue_txt}.lock")
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("blinky.queue")
 logging.getLogger("filelock").setLevel(logging.WARN)
 
-def setup():
-    open(queue_txt,"a").write("")
+def setup() -> None:
+    with open(queue_txt,"a", encoding='utf-8') as fl:
+        fl.write("")
 
-def mark_ready(path):
+def mark_ready(path: str) -> None:
     with lock:
         logger.info("Queuing: %s", path)
-        open(queue_txt, "a").write(path + "\n")
+        with open(queue_txt, "a", encoding='utf-8') as fl:
+            fl.write(path + "\n")
 
-def has_items():
-    with open(queue_txt, 'r') as fin:
-        return fin.read().splitlines(True)
+def has_items() -> bool:
+    if os.stat(queue_txt).st_size == 0:
+        return False
+    return True
 
-
-def take():
+def take() -> str | None:
     with lock:
-        with open(queue_txt, 'r') as fin:
-            data = fin.read().splitlines(True)
-        with open(queue_txt, 'w') as fout:
-            fout.writelines(data[1:])
-        if data:
-            logger.info("Took: %s", data[0].strip())
-            return data[0].strip()
-        else:
-            logger.info("No item in queue")
+        if not has_items():
+            logger.info('Queue is empty')
             return None
-
-# mark_ready("asd")
-# mark_ready("stay")
-# take()
+        with open(queue_txt, 'r', encoding='utf-8') as fin:
+            data = fin.read().splitlines(True)
+        with open(queue_txt, 'w', encoding='utf-8') as fout:
+            if len(data) == 1:
+                fout.write('')
+            else:
+                fout.writelines(data[1:])
+        return data[0].strip()

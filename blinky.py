@@ -1,19 +1,18 @@
 """Blinky: Main contributer to FlaschPlayer"""
-import time
-import os
-import logging
-import sys
-from pathlib import Path
-import random
 import glob
-import ast
-import board
-import thequeue as q
-import text_queue as txt
-import display as d
+import logging
+import os
+import random
+import sys
+import time
+from pathlib import Path
+
 from PIL import Image, ImageSequence
-import layout
+
 import config
+import display as d
+import text_queue as txt_q
+import thequeue as q
 
 logger = logging.getLogger("blinky.led")
 
@@ -30,19 +29,17 @@ def display_gif(display, filepath, display_resolution):
     it will be displayed immediately. This repeats until no further
     gifs are in line"""
 
-
     def draw_frame(frame):
         rgb_frame = frame.convert('RGB')
-        default_frame_rate = 0.1
         txt = get_text()
         for y in range(display_resolution[1]):
             for x in range(display_resolution[0]):
                 if not txt:
-                    display.set_xy(x,y, rgb_frame.getpixel((x, y)))
+                    display.set_xy(x, y, rgb_frame.getpixel((x, y)))
                 else:
                     old_rgb = list(rgb_frame.getpixel((x, y)))
-                    new_rgb = tuple([ x*0.15 for x in old_rgb ])
-                    display.set_xy(x,y, new_rgb)
+                    new_rgb = tuple([x * 0.15 for x in old_rgb])
+                    display.set_xy(x, y, new_rgb)
         if txt:
             write_text(txt, display_resolution)
         if display.is_running():
@@ -57,11 +54,12 @@ def display_gif(display, filepath, display_resolution):
     def write_text(text, display_resolution):
         for coord in text:
             if coord[0] < display_resolution[0]:
-                display.set_xy(coord[0], coord[1], (255,255,255))
+                display.set_xy(coord[0], coord[1], (255, 255, 255))
+
     def get_text():
         global TEXT
-        if not TEXT and txt.has_items():
-            text = txt.pop()
+        if not TEXT and txt_q.has_items():
+            text = txt_q.pop()
             TEXT = text_generator(text, display_resolution)
             text = next(TEXT, None)
             return text
@@ -78,7 +76,7 @@ def display_gif(display, filepath, display_resolution):
         They get all moves on the x axis to the be outside on the of the display
         and then get moved one x coordnate per yield. If a x coordinate reaches 0
         it gets removes from the list. The generator stops if the list is empty"""
-        #TODO get x_boxes value 
+        # TODO get x_boxes value
         frame_counter = 0
         for dot in range(len(text)):
             text[dot][0] += display_resolution[0]
@@ -93,7 +91,7 @@ def display_gif(display, filepath, display_resolution):
                         remove.append(text[dot])
                     else:
                         text[dot][0] -= 1
-                text = [ x for x in text if (x not in remove) ]
+                text = [x for x in text if (x not in remove)]
                 yield text
 
     def bury_in_graveyard():
@@ -125,12 +123,12 @@ def display_gif(display, filepath, display_resolution):
                 if should_abort():
                     break
 
-    def draw_gif(path):
+    def draw_gif(filepath):
         total_loop_duration = 500
-        logger.info(f'Playing: {filepath}')
+        logger.info('Playing: %s', filepath)
         img = Image.open(filepath)
         if 'duration' in img.info:
-            #Adding the durations of every frame until at least 5 sec runtime
+            # Adding the durations of every frame until at least 5 sec runtime
             loop_gif(img, total_loop_duration)
         else:
             show_photo(img)
@@ -140,6 +138,7 @@ def display_gif(display, filepath, display_resolution):
             bury_in_graveyard()
 
     draw_gif(filepath)
+
 
 # periodically fetch brightness setting from file in config/
 
@@ -158,18 +157,13 @@ def display_gif(display, filepath, display_resolution):
 #     return brightness
 
 
-
-
-
 def files(path):
-    """generator object to list files in folder(config)"""
     for file in os.listdir(path):
         if os.path.isfile(os.path.join(path, file)):
             yield file
 
 
 def init(x_boxes, y_boxes, n_led=False):
-    """initializing the display"""
     led_count = x_boxes * y_boxes * 20
     x_res, y_res = (x_boxes * 4, y_boxes * 5)
     display_resolution = (x_res, y_res)
@@ -179,12 +173,8 @@ def init(x_boxes, y_boxes, n_led=False):
     else:
         display = d.PyGameDisplay(x_res, y_res, 50)
 
-    # TODO set_brightness for display based on argument
+    return display_resolution, display, led_count
 
-    if n_led:
-        return display_resolution, display, led_count
-    else:
-        return display_resolution, display
 
 def matches_pattern(filepath, pattern):
     filepath = filepath.lower()
@@ -195,12 +185,11 @@ def matches_pattern(filepath, pattern):
             matches = False
     return matches
 
-def main(x_boxes=5, y_boxes=3):
-    """initializing folders, background gifs and runing the display"""
 
-    display_resolution, display = init(x_boxes, y_boxes)
+def main(x_boxes=5, y_boxes=3) -> None:
+    display_resolution, display, _ = init(x_boxes, y_boxes)
 
-    #Setup Media Wait list
+    # Setup Media Wait list
 
     os.makedirs(f"{config.work_dir}/graveyard", exist_ok=True)
     # os.chown(f"{config.work_dir}/graveyard", uid=1000, gid=1000)
@@ -208,32 +197,33 @@ def main(x_boxes=5, y_boxes=3):
     # os.chown(f"{config.work_dir}/gifs", uid=1000, gid=1000)
 
     while display.is_running():
-        waiting_line = glob.glob(f"{config.work_dir}/gifs/*.gif")
-        mood = config.mood.get()
-        pattern = config.pattern.get()
-        if config.playlistmode.get() == "mood":
-            backgrounds = glob.glob(f"{config.work_dir}/backgrounds/{mood}/*.gif")
-        else:
-            backgrounds = glob.glob(f"{config.work_dir}/backgrounds/*/*.gif")
-            backgrounds = list(filter(lambda f : matches_pattern(f, pattern), backgrounds))
-            if not backgrounds:
-                backgrounds = backgrounds = glob.glob(f"{config.work_dir}/backgrounds/default/*.gif")
+        if not (next_gif := q.take()):
+            mood = config.mood.get()
+            pattern = config.pattern.get()
+            if config.playlistmode.get() == "mood":
+                backgrounds = glob.glob(f"{config.work_dir}/backgrounds_mojo/{mood}/*.gif")
+            else:
+                backgrounds = glob.glob(f"{config.work_dir}/backgrounds_mojo/*/*.gif")
+                backgrounds = list(filter(lambda f: matches_pattern(f, pattern), backgrounds))
+                if not backgrounds:
+                    logger.exception("No gif in %s/backgrounds/%s or %s/gifs", config.work_dir, mood, config.work_dir)
+                    backgrounds = glob.glob(f"{config.work_dir}/backgrounds/default_mojo/*.gif")
+                if backgrounds:
+                    next_gif = random.choice(backgrounds)
         try:
-            next_gif = q.take()
-            if not next_gif:
-                next_gif = random.choice(backgrounds)
             display_gif(display, next_gif, display_resolution)
         except KeyboardInterrupt:
             logger.info("Interrupted, exit, over and out")
             sys.exit()
-        except Exception as e:
-            logger.exception(f"No gif in {config.work_dir}/backgrounds/{mood} or {config.work_dir}/gifs")
-            time.sleep(1)
+        except AttributeError:
+            logger.exception('Background gifs setup failed. Check folders')
+            time.sleep(2)
 
 
 if __name__ == '__main__':
     logger.info('#####  blinky   ###########################')
     import argparse
+
     PARSER = argparse.ArgumentParser()
     PARSER.add_argument("-d", "--debug", action="store_true", default=False,
                         help="debug mode")
@@ -243,8 +233,7 @@ if __name__ == '__main__':
                         help="Set brightness")
     ARGS = PARSER.parse_args()
 
-
     if not ARGS.debug:
         main()
-    elif ARGS.debug:
-        debug(ARGS.delay)
+    else:
+        print('No debug mode implemented atm')
