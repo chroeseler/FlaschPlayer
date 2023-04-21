@@ -3,17 +3,23 @@ import time
 import os
 import logging
 import sys
+from pathlib import Path
 import random
 import glob
 import ast
 import board
 import thequeue as q
+import text_queue as txt
 import display as d
 from PIL import Image, ImageSequence
 import layout
 import config
 
 logger = logging.getLogger("blinky.led")
+
+TEXT = None
+SKIP = Path(f'{config.work_dir}/config/skip')
+
 
 def display_gif(display, filepath, display_resolution):
     """Main action point
@@ -28,9 +34,17 @@ def display_gif(display, filepath, display_resolution):
     def draw_frame(frame):
         rgb_frame = frame.convert('RGB')
         default_frame_rate = 0.1
+        txt = get_text()
         for y in range(display_resolution[1]):
             for x in range(display_resolution[0]):
-                display.set_xy(x,y, rgb_frame.getpixel((x, y)))
+                if not txt:
+                    display.set_xy(x,y, rgb_frame.getpixel((x, y)))
+                else:
+                    old_rgb = list(rgb_frame.getpixel((x, y)))
+                    new_rgb = tuple([ x*0.15 for x in old_rgb ])
+                    display.set_xy(x,y, new_rgb)
+        if txt:
+            write_text(txt, display_resolution)
         if display.is_running():
             display.show()
         else:
@@ -39,6 +53,48 @@ def display_gif(display, filepath, display_resolution):
             if isinstance(frame.info['duration'], int):
                 if frame.info['duration'] > 100:
                     time.sleep((frame.info['duration'] - 100) / 1000)
+
+    def write_text(text, display_resolution):
+        for coord in text:
+            if coord[0] < display_resolution[0]:
+                display.set_xy(coord[0], coord[1], (255,255,255))
+    def get_text():
+        global TEXT
+        if not TEXT and txt.has_items():
+            text = txt.pop()
+            TEXT = text_generator(text, display_resolution)
+            text = next(TEXT, None)
+            return text
+        elif TEXT is not None:
+            text = next(TEXT, None)
+            if text:
+                return text
+            else:
+                TEXT = None
+                return None
+
+    def text_generator(text, display_resolution):
+        """The generator gets a list with the dot coordinates of the text letters
+        They get all moves on the x axis to the be outside on the of the display
+        and then get moved one x coordnate per yield. If a x coordinate reaches 0
+        it gets removes from the list. The generator stops if the list is empty"""
+        #TODO get x_boxes value 
+        frame_counter = 0
+        for dot in range(len(text)):
+            text[dot][0] += display_resolution[0]
+        while text:
+            frame_counter += 1
+            if frame_counter % config.text_speed.get() != 0:
+                yield text
+            else:
+                remove = []
+                for dot in range(len(text)):
+                    if text[dot][0] == 0:
+                        remove.append(text[dot])
+                    else:
+                        text[dot][0] -= 1
+                text = [ x for x in text if (x not in remove) ]
+                yield text
 
     def bury_in_graveyard():
         os.rename(filepath, f'{config.work_dir}/graveyard/{time.time()}.gif')
@@ -52,6 +108,9 @@ def display_gif(display, filepath, display_resolution):
         return "backgrounds" in filepath
 
     def should_abort():
+        if SKIP.exists():
+            os.remove(SKIP)
+            return True
         return is_background() and q.has_items()
 
     def loop_gif(image, duration):
@@ -168,7 +227,7 @@ def main(x_boxes=5, y_boxes=3):
             logger.info("Interrupted, exit, over and out")
             sys.exit()
         except Exception as e:
-            logger.error(f"No gif in {config.work_dir}/backgrounds/{mood} or {config.work_dir}/gifs")
+            logger.exception(f"No gif in {config.work_dir}/backgrounds/{mood} or {config.work_dir}/gifs")
             time.sleep(1)
 
 

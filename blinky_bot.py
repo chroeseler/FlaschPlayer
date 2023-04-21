@@ -24,11 +24,13 @@ import traceback
 
 from PIL import Image
 from ffmpy import FFmpeg
+from pathlib import Path
 import os
 import sys
 from signal import signal, SIGINT
 import config
 import thequeue as q
+import text_queue as txt
 import glob
 
 gif_counter = 0
@@ -49,6 +51,14 @@ def help(update, context):
     """Send a message when the command /help is issued."""
     update.message.reply_text('Help!')
 
+
+def text_speed(update, context):
+    """Send a message when the command /text_speed is issued."""
+    if context.args and isinstance(int(context.args[0]), int):
+        config.text_speed.set(context.args[0])
+        update.message.reply_text(f"Text speed set to {context.args[0]}")
+    else:
+        update.message.reply_text(f"Text speed can only be a round number. Default is 70 e.g. /text_speed 70")
 
 def brightness(update, context):
     """Send a message when the command /brightness is issued."""
@@ -73,6 +83,15 @@ def play(update, context):
     else:
         update.message.reply_text("You need to provide something to select GIFs from our catalogue")
 
+def text(update, context):
+    """Writing text ontop of what is playing if issued with the /text command"""
+    if len(update.message.text) > 120:
+        update.message.reply_text("Sorry that's quite the text and I'm a little lazy. Can you make it shorter?")
+    else:
+        txt.put(update.message.text)
+
+def skip(update, context):
+    Path(f'{config.work_dir}/config/skip').touch()
 
 def echo(update, context):
     """Echo the user message."""
@@ -158,15 +177,17 @@ def make_updater():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler("brightness", brightness))
+    dp.add_handler(CommandHandler("text_speed", text_speed))
     dp.add_handler(CommandHandler("mood", mood))
     dp.add_handler(CommandHandler("play", play))
+    dp.add_handler(CommandHandler("skip", skip))
 
     dp.add_handler(MessageHandler(Filters.voice, voice_handler))
     dp.add_handler(MessageHandler(Filters.photo, image_handler))
     dp.add_handler(MessageHandler(Filters.document.mime_type("video/mp4"), gif_handler))
 
     # on noncommand i.e message - echo the message on Telegram
-    dp.add_handler(MessageHandler(Filters.text, echo))
+    dp.add_handler(MessageHandler(Filters.text, text))
 
     # log all errors
     dp.add_error_handler(error)
@@ -182,8 +203,9 @@ class System:
         # Make sure to set use_context=True to use the new context based callbacks
         # Post version 12 this will no longer be necessary
         logger.info('##########################   bot  #########')
-        logger.info("Setting up queue")
+        logger.info("Setting up queues")
         q.setup()
+        txt.setup()
         self.updater = make_updater()
 
     def start(self):
