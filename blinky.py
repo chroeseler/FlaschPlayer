@@ -146,7 +146,6 @@ def files(path):
             yield file
 
 
-def init(x_boxes: int, y_boxes: int, rotate_90: bool):
     led_count = x_boxes * y_boxes * 20
     x_res, y_res = (x_boxes * 5, y_boxes * 4) if not rotate_90 else (x_boxes * 4, y_boxes * 5)
     display_resolution = (x_res, y_res)
