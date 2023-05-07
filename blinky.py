@@ -26,7 +26,7 @@ def display_gif(display, filepath, display_resolution):
     The methods takes the background gif and sets frame by frame
     every pixel. After every frame the display.show() method is called.
     Also the waiting list is checked. If a gif is in the list
-    it will be displayed immediately. This repeats until no further
+    it will be displayed import work_dir, display_settings immediately. This repeats until no further
     gifs are in line"""
 
     def draw_frame(frame):

@@ -5,7 +5,7 @@ import config
 import numpy as np
 import sys
 from PIL import Image
-import json
+from config import work_dir
 
 queue_txt = f"{config.work_dir}/text_queue.txt"
 lock = FileLock(f"{queue_txt}.lock")
