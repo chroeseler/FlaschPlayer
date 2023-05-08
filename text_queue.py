@@ -1,17 +1,14 @@
-from filelock import Timeout, FileLock
+from filelock import FileLock
 from pathlib import Path
 import logging
-import config
-import numpy as np
-import sys
+from config import settings
 from PIL import Image
-from config import work_dir
 
-queue_txt = f"{config.work_dir}/text_queue.txt"
+queue_txt = f"{settings.work_dir}/text_queue.txt"
 lock = FileLock(f"{queue_txt}.lock")
 
 logger = logging.getLogger(__name__)
-LETTERS = Path(f'{config.work_dir}/letter')
+LETTERS = Path(f'{settings.work_dir}/letter')
 
 def setup():
     open(queue_txt,"a").write("")

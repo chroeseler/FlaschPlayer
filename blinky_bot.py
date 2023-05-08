@@ -28,7 +28,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 
 from ffmpy import FFmpeg
-import config
+from config import settings
 import thequeue as q
 import text_queue as txt
 
@@ -54,7 +54,7 @@ def help(update, context):
 def text_speed(update, context):
     """Send a message when the command /text_speed is issued."""
     if context.args and isinstance(int(context.args[0]), int):
-        config.text_speed.set(context.args[0])
+        settings.text_speed = context.args[0]
         update.message.reply_text(f"Text speed set to {context.args[0]}")
     else:
         update.message.reply_text(f"Text speed can only be a round number. Default is 70 e.g. /text_speed 70")
@@ -62,22 +62,22 @@ def text_speed(update, context):
 def brightness(update, context):
     """Send a message when the command /brightness is issued."""
     if context.args:
-        config.brightness.set(context.args[0])
+        settings.brightness = context.args[0]
         update.message.reply_text(f"Brightness set to {context.args[0]}")
     else:
         update.message.reply_text(f"What brightness do you want dear? E.g. /brightness 0.4")
 
 def mood(update, context):
     """Send a message when the command /mood is issued."""
-    config.mood.set(context.args[0])
-    config.playlistmode.set("mood")
+    settings.mood = context.args[0]
+    settings.playlistmode = "mood"
     update.message.reply_text(f"Mood set {context.args[0]}")
 
 def play(update, context):
     """Send a message when the command /mood is issued."""
     if context.args:
-        config.pattern.set(context.args[0])
-        config.playlistmode.set("pattern")
+        settings.pattern = context.args[0]
+        settings.playlistmode = "pattern"
         update.message.reply_text(f"Playing anything matching {context.args[0]} — note that it may not match anything")
     else:
         update.message.reply_text("You need to provide something to select GIFs from our catalogue")
@@ -90,7 +90,7 @@ def text(update, context):
         txt.put(update.message.text)
 
 def skip(update, context):
-    Path(f'{config.work_dir}/config/skip').touch()
+    Path(f'{settings.work_dir}/config/skip').touch()
 
 def echo(update, context):
     """Echo the user message."""
@@ -125,9 +125,9 @@ def gif_handler(update, context):
     logger.info(f'Starting Gif Handler')
     if update.message.document.file_size < 20000000:
         mp4 = context.bot.getFile(update.message.document.file_id)
-        mp4.download(f'{config.work_dir}/media.mp4')
-        logger.info(os.path.getsize(f'{config.work_dir}/media.mp4'))
-        put_gifs(f'{config.work_dir}/media.mp4')
+        mp4.download(f'{settings.work_dir}/media.mp4')
+        logger.info(os.path.getsize(f'{settings.work_dir}/media.mp4'))
+        put_gifs(f'{settings.work_dir}/media.mp4')
     else:
         update.message.reply_text("""Wow! Sry that's way to big!
                 I'm just a little pi and I can't handle that much traffic.
@@ -137,13 +137,13 @@ def gif_handler(update, context):
 def image_handler(update, context):
     logger.info(f'Starting Image Handler')
     pic = context.bot.getFile(update.message.photo[-1].file_id)
-    pic.download(f'{config.work_dir}/photo.gif')
-    put_gifs(f'{config.work_dir}/photo.gif')
+    pic.download(f'{settings.work_dir}/photo.gif')
+    put_gifs(f'{settings.work_dir}/photo.gif')
 
 
 def put_gifs(telegram_file):
     global GIF_COUNTER
-    out = f'{config.work_dir}/gifs/{GIF_COUNTER:06d}.gif'
+    out = f'{settings.work_dir}/gifs/{GIF_COUNTER:06d}.gif'
     try:
         ff = FFmpeg(
                 inputs={telegram_file: '-y -hide_banner -loglevel error'}, #TODO REmove the -y ??/

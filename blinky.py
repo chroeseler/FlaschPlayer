@@ -9,7 +9,7 @@ from pathlib import Path
 
 from PIL import Image, ImageSequence
 
-import config
+from config import settings
 import display as d
 import text_queue as txt_q
 import thequeue as q
@@ -17,7 +17,7 @@ import thequeue as q
 logger = logging.getLogger("blinky.led")
 
 TEXT = None
-SKIP = Path(f'{config.work_dir}/config/skip')
+SKIP = Path(f'{settings.work_dir}/config/skip')
 
 
 def display_gif(display, filepath, display_resolution):
@@ -81,7 +81,7 @@ def display_gif(display, filepath, display_resolution):
             text[dot][0] += display_resolution[0]
         while text:
             frame_counter += 1
-            if frame_counter % config.text_speed.get() != 0:
+            if frame_counter % settings.text_speed != 0:
                 yield text
             else:
                 remove = []
@@ -90,11 +90,11 @@ def display_gif(display, filepath, display_resolution):
                         remove.append(text[dot])
                     else:
                         text[dot][0] -= 1
-                text = [x for x in text if (x not in remove)]
+                text = [x for x in text if x not in remove]
                 yield text
 
     def bury_in_graveyard():
-        os.rename(filepath, f'{config.work_dir}/graveyard/{time.time()}.gif')
+        os.rename(filepath, f'{settings.work_dir}/graveyard/{time.time()}.gif')
 
     def show_photo(image):
         # photos in gif container get shown 5 seconds
@@ -146,12 +146,13 @@ def files(path):
             yield file
 
 
+def init(x_boxes, y_boxes):
     led_count = x_boxes * y_boxes * 20
     x_res, y_res = (x_boxes * 5, y_boxes * 4) if not rotate_90 else (x_boxes * 4, y_boxes * 5)
     display_resolution = (x_res, y_res)
 
-    if config.use_neopixel:
-        display = d.NeoPixelDisplay(led_count, x_boxes, y_boxes, rotate_90)
+    if settings.use_neopixel:
+        display = d.NeoPixelDisplay(led_count, x_boxes, y_boxes)
     else:
         display = d.PyGameDisplay(x_res, y_res, 50)
 
@@ -175,23 +176,23 @@ def main(x_boxes: int=5, y_boxes: int=3, rotate_90:bool=False) -> None:
         raise FileNotFoundError(f'No background with fitting resolution availabel at {config.work_dir}/backgrounds/{res_str}/')
     # Setup Media Wait list
 
-    os.makedirs(f"{config.work_dir}/graveyard", exist_ok=True)
-    # os.chown(f"{config.work_dir}/graveyard", uid=1000, gid=1000)
-    os.makedirs(f"{config.work_dir}/gifs", exist_ok=True)
-    # os.chown(f"{config.work_dir}/gifs", uid=1000, gid=1000)
+    os.makedirs(f"{settings.work_dir}/graveyard", exist_ok=True)
+    # os.chown(f"{settings.work_dir}/graveyard", uid=1000, gid=1000)
+    os.makedirs(f"{settings.work_dir}/gifs", exist_ok=True)
+    # os.chown(f"{settings.work_dir}/gifs", uid=1000, gid=1000)
 
     while display.is_running():
         if not (next_gif := q.take()):
-            mood = config.mood.get()
-            pattern = config.pattern.get()
-            if config.playlistmode.get() == "mood":
-                backgrounds = glob.glob(f"{config.work_dir}/backgrounds/{res_str}/{mood}/*.gif")
+            mood = settings.mood
+            pattern = settings.pattern
+            if settings.playlistmode == "mood":
+                backgrounds = glob.glob(f"{settings.work_dir}/backgrounds/{res_str}/{mood}/*.gif")
             else:
-                backgrounds = glob.glob(f"{config.work_dir}/backgrounds/{res_str}/*/*.gif")
+                backgrounds = glob.glob(f"{settings.work_dir}/backgrounds/{res_str}/*/*.gif")
                 backgrounds = list(filter(lambda f: matches_pattern(f, pattern), backgrounds))
                 if not backgrounds:
-                    logger.exception("No gif in %s/backgrounds/%s or %s/gifs", config.work_dir, mood, config.work_dir)
-                    backgrounds = glob.glob(f"{config.work_dir}/backgrounds/{res_str}/default/*.gif")
+                    logger.exception("No gif in %s/backgrounds/%s or %s/gifs", settings.work_dir, mood, settings.work_dir)
+                    backgrounds = glob.glob(f"{settings.work_dir}/backgrounds/{res_str}/default/*.gif")
             next_gif = random.choice(backgrounds)
         try:
             display_gif(display, next_gif, display_resolution)
