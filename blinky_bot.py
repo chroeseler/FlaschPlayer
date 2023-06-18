@@ -15,7 +15,7 @@ Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
 import logging
-#import pushover as po
+# import pushover as po
 
 import os
 from pathlib import Path
@@ -23,11 +23,10 @@ from signal import signal, SIGINT
 import sys
 import traceback
 
-from telegram import Bot
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 
-from ffmpy import FFmpeg
+from ffmpy import FFmpeg, FFRuntimeError
 from config import settings
 import thequeue as q
 import text_queue as txt
@@ -59,6 +58,7 @@ def text_speed(update, context):
     else:
         update.message.reply_text(f"Text speed can only be a round number. Default is 70 e.g. /text_speed 70")
 
+
 def brightness(update, context):
     """Send a message when the command /brightness is issued."""
     if context.args:
@@ -67,11 +67,13 @@ def brightness(update, context):
     else:
         update.message.reply_text(f"What brightness do you want dear? E.g. /brightness 0.4")
 
+
 def mood(update, context):
     """Send a message when the command /mood is issued."""
     settings.mood = context.args[0]
     settings.playlistmode = "mood"
     update.message.reply_text(f"Mood set {context.args[0]}")
+
 
 def play(update, context):
     """Send a message when the command /mood is issued."""
@@ -82,6 +84,7 @@ def play(update, context):
     else:
         update.message.reply_text("You need to provide something to select GIFs from our catalogue")
 
+
 def text(update, context):
     """Writing text ontop of what is playing if issued with the /text command"""
     if len(update.message.text) > 120:
@@ -89,13 +92,14 @@ def text(update, context):
     else:
         txt.put(update.message.text)
 
+
 def skip(update, context):
     Path(f'{settings.work_dir}/config/skip').touch()
+
 
 def echo(update, context):
     """Echo the user message."""
     logger.info(f'Starting Echo Handler')
-    #update.message.reply_text(update.message.text)
     update.message.reply_text("""Sorry this is not a gif or a picture and
 I have no clue how to write text to that display thing there.
 I mean have you seen how that works? It's fucking nuts.
@@ -103,6 +107,7 @@ I don't even know how to make letters that small and
 I'm just an everyday bot. \n\n
 Anyways, wanna give me a gif or a picture so I can resize it
 to 20x15 pixel and show you? :D""")
+
 
 def voice_handler(update, context):
     update.message.reply_text("""Sorry this is not a gif or a picture and
@@ -117,9 +122,10 @@ to 20x15 pixel and show you? :D""")
 def error(update, context):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
-    error = traceback.format_exc()
-    logger.error(f"Error: {str(context.error)}\n{error}")
-    #po.send(f"Error: {str(context.error)}\n{error}")
+    err = traceback.format_exc()
+    logger.error(f"Error: {str(context.error)}\n{err}")
+    # po.send(f"Error: {str(context.error)}\n{error}")
+
 
 def gif_handler(update, context):
     logger.info(f'Starting Gif Handler')
@@ -146,22 +152,22 @@ def put_gifs(telegram_file):
     out = f'{settings.work_dir}/gifs/{GIF_COUNTER:06d}.gif'
     try:
         ff = FFmpeg(
-                inputs={telegram_file: '-y -hide_banner -loglevel error'}, #TODO REmove the -y ??/
+                inputs={telegram_file: '-y -hide_banner -loglevel error'},  # TODO REmove the -y ??/
                 outputs={out: f'-s {settings.display_resolution[0]}x{settings.display_resolution[1]}'})
         ff.run()
-        try:
-            with open(out) as f:
-                logger.info(f'Gif creation succesfull: {out}')
-        except IOError:
-            logger.warning(f'Gif creation failed: {out}')
-    except Exception as e:
-        logger.warning('FFmpeg Error!')
-        #po.send(f"ffmpeg error\n{traceback.format_exec()}")
+        if not os.path.isfile(out):
+            raise FileNotFoundError(f'Gif creation failed: {out}')
+        logger.info(f'Gif creation succesfull: {out}')
+
+    except FFRuntimeError:
+        logger.exception('FFmpeg Error!')
+        # po.send(f"ffmpeg error\n{traceback.format_exec()}")
     try:
         q.mark_ready(out)
         GIF_COUNTER += 1
-    except Exception as e:
-        logger.error(traceback.format_exec())
+    except Exception:
+        logger.exception('Failure to mark gif as ready')
+
 
 def make_updater():
     token = os.environ['BOT_TOKEN']
@@ -185,7 +191,7 @@ def make_updater():
     dp.add_handler(MessageHandler(Filters.photo, image_handler))
     dp.add_handler(MessageHandler(Filters.document.mime_type("video/mp4"), gif_handler))
 
-    # on noncommand i.e message - echo the message on Telegram
+    # on noncommand i.e. message - echo the message on Telegram
     dp.add_handler(MessageHandler(Filters.text, text))
 
     # log all errors
@@ -193,7 +199,9 @@ def make_updater():
 
     return updater
 
+
 stopped = False
+
 
 class System:
     def __init__(self):
@@ -214,14 +222,16 @@ class System:
         global stopped
         if not stopped:
             stopped = 1
-            self.updater.stop() # this function can take seconds!
+            self.updater.stop()  # this function can take seconds!
             self.updater.idle()
         else:
             logger.info("Stop already initiated")
 
+
 if __name__ == '__main__':
 
     s = System()
+
     def handler(signal_received, frame):
         # Handle any cleanup here
         logger.info('SIGINT or CTRL-C detected. Exiting gracefully')
@@ -232,6 +242,3 @@ if __name__ == '__main__':
 
     print('Running. Press CTRL-C to exit.')
     s.start()
-    while True:
-      # Do nothing and hog CPU forever until SIGINT received.
-      pass
