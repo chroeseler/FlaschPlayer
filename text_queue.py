@@ -4,6 +4,7 @@ import logging
 from config import settings
 from PIL import Image
 import json
+from math import ceil
 
 queue_txt = f"{settings.work_dir}/text_queue.txt"
 lock = FileLock(f"{queue_txt}.lock")
@@ -59,6 +60,7 @@ def pop():
 def dotting(path):
     img = Image.open(path)
     dots = img.convert('L')
+    offset = ceil(settings.display_resolution[1] - img.size[1])
     letter_matrix = {'dots': []}
     furthest_x = 0
     for x in range(img.size[0]):
@@ -66,7 +68,7 @@ def dotting(path):
             g_scale_value = dots.getpixel((x, y))
             if g_scale_value > 100:
                 furthest_x = x
-                letter_matrix['dots'].append((x, y+2))
+                letter_matrix['dots'].append((x, y+offset))
 
     letter_matrix['size'] = (furthest_x, dots.size[1])
     return letter_matrix
