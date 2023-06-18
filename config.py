@@ -1,48 +1,39 @@
 import os
 import logging
-import dbm
+import json
+from dataclasses import dataclass, asdict
 
-logger = logging.getLogger("blinky.config")
+logger = logging.getLogger('blinky.config')
 
-work_dir = os.environ['WORK_DIR']
 
-use_neopixel = 'NEOPIXEL' in os.environ
+@dataclass
+class Config:
+    display_resolution: tuple[int, int] = (25, 12)
+    brightness: float = 1.0
+    playlistmode: str = 'mood'
+    mood: str = 'default'
+    pattern: str = 'default'
+    text_speed: int = 70
 
-waiting_line = work_dir + "/config/waiting_line"
+    work_dir = os.environ['WORK_DIR']
+    waiting_line = work_dir + '/config/waiting_line'
+    waiting_line_lock = work_dir + '/config/waiting_line.lock'
+    config_file = f'{work_dir}/config/settings'
 
-waiting_line_lock = work_dir + "/config/waiting_line.lock"
+    use_neopixel = 'NEOPIXEL' in os.environ
 
-def get_config(param: str) -> str:
-    with dbm.open(f'{work_dir}/config/settings', 'c') as db:
-        return db[param]
+    def __init__(self):
+        if os.path.exists(self.config_file):
+            logger.info('Old config file found; loading')
+            with open(self.config_file, 'r', encoding='utf-8') as settings_file:
+                old_settings = json.load(settings_file)
+                for key, value in old_settings.items():
+                    setattr(self, key, value)
 
-def set_config(param: str, value: str) -> None:
-    with dbm.open(f'{work_dir}/config/settings', 'c') as db:
-        db[param] = value
+    def __setattr__(self, name, value):
+        super()
+        with open(self.config_file, 'w', encoding='utf-8') as settings_file:
+            json.dump(asdict(self), settings_file)
 
-class ConfigVar:
-    def __init__(self, key, default, coerce_fn) -> None:
-        self.key = key
-        self.default = default
-        self.coerce_fn = coerce_fn
 
-    def get(self):
-        try:
-            return self.coerce_fn(get_config(self.key))
-        except KeyError:
-            return self.coerce_fn(self.default)
-
-    def set(self, val: str):
-        logger.info("Setting config %s to %s", self.key, val)
-        set_config(self.key, val)
-
-def coerce_str(x) -> str:
-    if isinstance(x, str):
-        return x
-    return x.decode('utf-8')
-
-brightness = ConfigVar("brightness", 1, float)
-playlistmode = ConfigVar("playlistmode", "mood", coerce_str)
-mood = ConfigVar("mood", "default", coerce_str)
-pattern = ConfigVar("pattern", "default", coerce_str)
-text_speed = ConfigVar('text_speed', 70, int)
+settings = Config()

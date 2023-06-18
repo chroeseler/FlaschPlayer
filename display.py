@@ -1,23 +1,27 @@
 import os
-import config
 import logging
-import board
-import layout
 import time
 import numpy as np
+import board
+import layout
+from config import settings
 
 logger = logging.getLogger("blinky.display")
 
 
 class NeoPixelDisplay:
+    resolution: set[int, int]
+    led_count: int
+
     def __init__(self, led_count: int, x_boxes: int, y_boxes: int, rotate_90: bool):
 
         if os.uname()[4][:3] == "arm":
             self.strip = __import__("neopixel").NeoPixel(board.D18, led_count, brightness=1, auto_write=False)
         else:
-            self.strip = [None]*led_count
+            self.strip = [None] * led_count
         self.matrix = layout.full_layout(x_boxes, y_boxes, rotate_90=rotate_90)
-
+        self.resolution = {x_boxes * 5, y_boxes * 4} if not rotate_90 else {x_boxes * 4, y_boxes * 5}
+        self.brightness = settings.brightness
         self.led_count = led_count
 
     def is_running(self):
@@ -29,22 +33,19 @@ class NeoPixelDisplay:
         self.strip.show()
 
     def set_brightness(self):
-        self.brightness = config.brightness.get()
+        self.brightness = settings.brightness
 
     def set_xy(self, x, y, value):
         led_id = self.matrix[y][x]
         logger.debug('set_xy x: %s, y: %s, val: %s, id: %s', x, y, value, led_id)
-        new_value = []
         dark = True
         for color in value:
             if color > 3:
                 dark = False
         if dark:
-            new_value = (0, 0, 0)
-        else:
-            new_value = value
+            value = (0, 0, 0)
 
-        self.strip[led_id] =  tuple(self.brightness * x  for x in new_value)
+        self.strip[led_id] = tuple(self.brightness * x for x in value)
 
     def flash(self):
         for i in range(self.led_count):
@@ -87,7 +88,9 @@ class NeoPixelDisplay:
         except KeyboardInterrupt:
             self.flash()
 
+
 class PyGameDisplay:
+
     def __init__(self, x_pixels, y_pixels, pixel_size):
         self.pg = __import__("pygame")
         pg = self.pg
@@ -101,6 +104,7 @@ class PyGameDisplay:
         self.x_pixels = x_pixels
         self.y_pixels = y_pixels
         self.running = True
+        self.brightness = settings.brightness
 
     def is_running(self):
         return self.running
@@ -124,14 +128,14 @@ class PyGameDisplay:
     def paint_random(self):
         color = tuple(np.random.choice(range(256), size=3))
         self.set_xy(np.random.choice(range(self.x_pixels)),
-                np.random.choice(range(self.y_pixels)),
-                color)
+                    np.random.choice(range(self.y_pixels)),
+                    color)
 
     def set_brightness(self):
-        self.brightness = config.brightness.get()
+        self.brightness = settings.brightness
 
     def set_xy(self, x, y, color):
         x_offset = x * self.pixel_size
         y_offset = y * self.pixel_size
-        color  = tuple(self.brightness * x for x in color)
+        color = tuple(self.brightness * x for x in color)
         self.pg.draw.rect(self.surface, color, self.pg.Rect(x_offset, y_offset, self.pixel_size, self.pixel_size))
