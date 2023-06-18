@@ -1,16 +1,17 @@
 import os
-import json
 import logging
 import json
 from dataclasses import dataclass, asdict
 
 logger = logging.getLogger('blinky.config')
 
+
 @dataclass
 class Config:
+    display_resolution: tuple[int, int] = (25, 12)
     brightness: float = 1.0
     playlistmode: str = 'mood'
-    mood: str ='default'
+    mood: str = 'default'
     pattern: str = 'default'
     text_speed: int = 70
 
@@ -33,4 +34,6 @@ class Config:
         super()
         with open(self.config_file, 'w', encoding='utf-8') as settings_file:
             json.dump(asdict(self), settings_file)
+
+
 settings = Config()

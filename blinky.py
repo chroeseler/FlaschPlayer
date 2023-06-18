@@ -1,4 +1,4 @@
-"""Blinky: Main contributer to FlaschPlayer"""
+"""Blinky: Main contributor to FlaschPlayer"""
 import glob
 import logging
 import os
@@ -20,20 +20,20 @@ TEXT = None
 SKIP = Path(f'{settings.work_dir}/config/skip')
 
 
-def display_gif(display, filepath, display_resolution):
+def display_gif(display, filepath):
     """Main action point
 
-    The methods takes the background gif and sets frame by frame
-    every pixel. After every frame the display.show() method is called.
-    Also the waiting list is checked. If a gif is in the list
+    The methods take the background gif and sets frame by frame
+    every pixel. After every frame the display.show() method is called,
+    also the waiting list is checked. If a gif is in the list
     it will be displayed import work_dir, display_settings immediately. This repeats until no further
     gifs are in line"""
 
     def draw_frame(frame):
         rgb_frame = frame.convert('RGB')
         txt = get_text()
-        for y in range(display_resolution[1]):
-            for x in range(display_resolution[0]):
+        for y in range(settings.display_resolution[1]):
+            for x in range(settings.display_resolution[0]):
                 if not txt:
                     display.set_xy(x, y, rgb_frame.getpixel((x, y)))
                 else:
@@ -41,7 +41,7 @@ def display_gif(display, filepath, display_resolution):
                     new_rgb = tuple([x * 0.15 for x in old_rgb])
                     display.set_xy(x, y, new_rgb)
         if txt:
-            write_text(txt, display_resolution)
+            write_text(txt)
         if display.is_running():
             display.show()
         else:
@@ -51,16 +51,16 @@ def display_gif(display, filepath, display_resolution):
                 if frame.info['duration'] > 100:
                     time.sleep((frame.info['duration'] - 100) / 1000)
 
-    def write_text(text, display_resolution):
+    def write_text(text):
         for coord in text:
-            if coord[0] < display_resolution[0]:
+            if coord[0] < settings.display_resolution[0]:
                 display.set_xy(coord[0], coord[1], (255, 255, 255))
 
     def get_text():
         global TEXT
         if not TEXT and txt_q.has_items():
             text = txt_q.pop()
-            TEXT = text_generator(text, display_resolution)
+            TEXT = text_generator(text)
             text = next(TEXT, None)
             return text
         elif TEXT is not None:
@@ -71,14 +71,14 @@ def display_gif(display, filepath, display_resolution):
                 TEXT = None
                 return None
 
-    def text_generator(text, display_resolution):
+    def text_generator(text):
         """The generator gets a list with the dot coordinates of the text letters.
-        They all get moved on the x axis to the be outside on the of the display
+        They all get moved on the x-axis to the be outside on the of the display
         and then get moved back one x coordinate per yield. If an x coordinate reaches 0
         it gets removes from the list. The generator stops if the list is empty"""
         frame_counter = 0
         for dot in range(len(text)):
-            text[dot][0] += display_resolution[0]
+            text[dot][0] += settings.display_resolution[0]
         while text:
             frame_counter += 1
             if frame_counter % settings.text_speed != 0:
@@ -122,10 +122,10 @@ def display_gif(display, filepath, display_resolution):
                 if should_abort():
                     break
 
-    def draw_gif(filepath):
+    def draw_gif(file_path):
         total_loop_duration = 500
-        logger.info('Playing: %s', filepath)
-        img = Image.open(filepath)
+        logger.info('Playing: %s', file_path)
+        img = Image.open(file_path)
         if 'duration' in img.info:
             # Adding the durations of every frame until at least 5 sec runtime
             loop_gif(img, total_loop_duration)
@@ -133,11 +133,10 @@ def display_gif(display, filepath, display_resolution):
             show_photo(img)
 
         if not is_background():
-            logger.info("Moving to graveyard: %s", filepath)
+            logger.info("Moving to graveyard: %s", file_path)
             bury_in_graveyard()
 
     draw_gif(filepath)
-
 
 
 def files(path):
@@ -149,14 +148,14 @@ def files(path):
 def init(x_boxes: int, y_boxes: int, rotate_90: bool):
     led_count = x_boxes * y_boxes * 20
     x_res, y_res = (x_boxes * 5, y_boxes * 4) if not rotate_90 else (x_boxes * 4, y_boxes * 5)
-    display_resolution = (x_res, y_res)
+    settings.display_resolution = (x_res, y_res)
 
     if settings.use_neopixel:
-        display = d.NeoPixelDisplay(led_count, x_boxes, y_boxes)
+        display = d.NeoPixelDisplay(led_count, x_boxes, y_boxes, rotate_90=rotate_90)
     else:
         display = d.PyGameDisplay(x_res, y_res, 50)
 
-    return display_resolution, display, led_count
+    return display, led_count
 
 
 def matches_pattern(filepath, pattern):
@@ -169,11 +168,11 @@ def matches_pattern(filepath, pattern):
     return matches
 
 
-def main(x_boxes: int=5, y_boxes: int=3, rotate_90:bool=False) -> None:
-    display_resolution, display, _ = init(x_boxes, y_boxes, rotate_90)
-    res_str = f'{display_resolution[0]}_{display_resolution[1]}'
+def main(x_boxes: int = 5, y_boxes: int = 3, rotate_90: bool = False) -> None:
+    display, _ = init(x_boxes, y_boxes, rotate_90)
+    res_str = f'{settings.display_resolution[0]}_{settings.display_resolution[1]}'
     if not os.path.isdir(f"{settings.work_dir}/data/backgrounds/{res_str}/"):
-        raise FileNotFoundError(f'No background with fitting resolution availabel at {settings.work_dir}/data/backgrounds/{res_str}/')
+        raise FileNotFoundError(f'No background with fitting resolution available at {settings.work_dir}/data/backgrounds/{res_str}/')
     # Setup Media Wait list
 
     os.makedirs(f"{settings.work_dir}/graveyard", exist_ok=True)
@@ -195,7 +194,7 @@ def main(x_boxes: int=5, y_boxes: int=3, rotate_90:bool=False) -> None:
                     backgrounds = glob.glob(f"{settings.work_dir}/data/backgrounds/{res_str}/default/*.gif")
             next_gif = random.choice(backgrounds)
         try:
-            display_gif(display, next_gif, display_resolution)
+            display_gif(display, next_gif)
         except KeyboardInterrupt:
             logger.info("Interrupted, exit, over and out")
             sys.exit()
@@ -225,4 +224,3 @@ if __name__ == '__main__':
         main(rotate_90=True)
     else:
         main()
-

@@ -147,7 +147,7 @@ def put_gifs(telegram_file):
     try:
         ff = FFmpeg(
                 inputs={telegram_file: '-y -hide_banner -loglevel error'}, #TODO REmove the -y ??/
-                outputs={out: '-s 20x15'})
+                outputs={out: f'-s {settings.display_resolution[0]}x{settings.display_resolution[1]}'})
         ff.run()
         try:
             with open(out) as f:
