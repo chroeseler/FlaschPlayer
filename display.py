@@ -10,12 +10,14 @@ logger = logging.getLogger("blinky.display")
 
 
 class NeoPixelDisplay:
-    def __init__(self, led_count, x_boxes, y_boxes):
+    def __init__(self, led_count: int, x_boxes: int, y_boxes: int, rotate_90: bool):
+
         if os.uname()[4][:3] == "arm":
             self.strip = __import__("neopixel").NeoPixel(board.D18, led_count, brightness=1, auto_write=False)
         else:
             self.strip = [None]*led_count
-        self.matrix = layout.full_layout(x_boxes, y_boxes, vert=True)
+        self.matrix = layout.full_layout(x_boxes, y_boxes, rotate_90=rotate_90)
+
         self.led_count = led_count
 
     def is_running(self):

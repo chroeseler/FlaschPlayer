@@ -72,9 +72,9 @@ def display_gif(display, filepath, display_resolution):
                 return None
 
     def text_generator(text, display_resolution):
-        """The generator gets a list with the dot coordinates of the text letters
-        They get all moves on the x axis to the be outside on the of the display
-        and then get moved one x coordnate per yield. If a x coordinate reaches 0
+        """The generator gets a list with the dot coordinates of the text letters.
+        They all get moved on the x axis to the be outside on the of the display
+        and then get moved back one x coordinate per yield. If an x coordinate reaches 0
         it gets removes from the list. The generator stops if the list is empty"""
         # TODO get x_boxes value
         frame_counter = 0
@@ -163,13 +163,13 @@ def files(path):
             yield file
 
 
-def init(x_boxes, y_boxes, n_led=False):
+def init(x_boxes: int, y_boxes: int, rotate_90: bool):
     led_count = x_boxes * y_boxes * 20
-    x_res, y_res = (x_boxes * 4, y_boxes * 5)
+    x_res, y_res = (x_boxes * 5, y_boxes * 4) if not rotate_90 else (x_boxes * 4, y_boxes * 5)
     display_resolution = (x_res, y_res)
 
     if config.use_neopixel:
-        display = d.NeoPixelDisplay(led_count, x_boxes, y_boxes)
+        display = d.NeoPixelDisplay(led_count, x_boxes, y_boxes, rotate_90)
     else:
         display = d.PyGameDisplay(x_res, y_res, 50)
 
@@ -186,8 +186,8 @@ def matches_pattern(filepath, pattern):
     return matches
 
 
-def main(x_boxes=5, y_boxes=3) -> None:
-    display_resolution, display, _ = init(x_boxes, y_boxes)
+def main(x_boxes: int=5, y_boxes: int=3, rotate_90:bool=False) -> None:
+    display_resolution, display, _ = init(x_boxes, y_boxes, rotate_90)
 
     # Setup Media Wait list
 
@@ -201,15 +201,14 @@ def main(x_boxes=5, y_boxes=3) -> None:
             mood = config.mood.get()
             pattern = config.pattern.get()
             if config.playlistmode.get() == "mood":
-                backgrounds = glob.glob(f"{config.work_dir}/backgrounds_mojo/{mood}/*.gif")
+                backgrounds = glob.glob(f"{config.work_dir}/backgrounds/{mood}/*.gif")
             else:
-                backgrounds = glob.glob(f"{config.work_dir}/backgrounds_mojo/*/*.gif")
+                backgrounds = glob.glob(f"{config.work_dir}/backgrounds/*/*.gif")
                 backgrounds = list(filter(lambda f: matches_pattern(f, pattern), backgrounds))
                 if not backgrounds:
                     logger.exception("No gif in %s/backgrounds/%s or %s/gifs", config.work_dir, mood, config.work_dir)
-                    backgrounds = glob.glob(f"{config.work_dir}/backgrounds/default_mojo/*.gif")
-                if backgrounds:
-                    next_gif = random.choice(backgrounds)
+                    backgrounds = glob.glob(f"{config.work_dir}/backgrounds/default/*.gif")
+            next_gif = random.choice(backgrounds)
         try:
             display_gif(display, next_gif, display_resolution)
         except KeyboardInterrupt:
@@ -231,9 +230,14 @@ if __name__ == '__main__':
                         help="delay between set")
     PARSER.add_argument("-b", "--brightness", type=float, default=1.0,
                         help="Set brightness")
+    PARSER.add_argument("-r", "--rotate", type=float, default=False,
+                        help="Set box rotation to vertical")
     ARGS = PARSER.parse_args()
 
-    if not ARGS.debug:
-        main()
-    else:
+    if ARGS.debug:
         print('No debug mode implemented atm')
+    elif ARGS.rotate:
+        main(rotate_90=True)
+    else:
+        main()
+
