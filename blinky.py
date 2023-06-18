@@ -146,7 +146,7 @@ def files(path):
             yield file
 
 
-def init(x_boxes, y_boxes):
+def init(x_boxes: int, y_boxes: int, rotate_90: bool):
     led_count = x_boxes * y_boxes * 20
     x_res, y_res = (x_boxes * 5, y_boxes * 4) if not rotate_90 else (x_boxes * 4, y_boxes * 5)
     display_resolution = (x_res, y_res)
@@ -172,8 +172,8 @@ def matches_pattern(filepath, pattern):
 def main(x_boxes: int=5, y_boxes: int=3, rotate_90:bool=False) -> None:
     display_resolution, display, _ = init(x_boxes, y_boxes, rotate_90)
     res_str = f'{display_resolution[0]}_{display_resolution[1]}'
-    if not os.path.isdir(f"{config.work_dir}/backgrounds/{res_str}/"):
-        raise FileNotFoundError(f'No background with fitting resolution availabel at {config.work_dir}/backgrounds/{res_str}/')
+    if not os.path.isdir(f"{settings.work_dir}/data/backgrounds/{res_str}/"):
+        raise FileNotFoundError(f'No background with fitting resolution availabel at {settings.work_dir}/data/backgrounds/{res_str}/')
     # Setup Media Wait list
 
     os.makedirs(f"{settings.work_dir}/graveyard", exist_ok=True)
@@ -186,13 +186,13 @@ def main(x_boxes: int=5, y_boxes: int=3, rotate_90:bool=False) -> None:
             mood = settings.mood
             pattern = settings.pattern
             if settings.playlistmode == "mood":
-                backgrounds = glob.glob(f"{settings.work_dir}/backgrounds/{res_str}/{mood}/*.gif")
+                backgrounds = glob.glob(f"{settings.work_dir}/data/backgrounds/{res_str}/{mood}/*.gif")
             else:
-                backgrounds = glob.glob(f"{settings.work_dir}/backgrounds/{res_str}/*/*.gif")
+                backgrounds = glob.glob(f"{settings.work_dir}/data/backgrounds/{res_str}/*/*.gif")
                 backgrounds = list(filter(lambda f: matches_pattern(f, pattern), backgrounds))
                 if not backgrounds:
                     logger.exception("No gif in %s/backgrounds/%s or %s/gifs", settings.work_dir, mood, settings.work_dir)
-                    backgrounds = glob.glob(f"{settings.work_dir}/backgrounds/{res_str}/default/*.gif")
+                    backgrounds = glob.glob(f"{settings.work_dir}/data/backgrounds/{res_str}/default/*.gif")
             next_gif = random.choice(backgrounds)
         try:
             display_gif(display, next_gif, display_resolution)
