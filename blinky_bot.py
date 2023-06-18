@@ -17,23 +17,22 @@ bot.
 import logging
 #import pushover as po
 
+import os
+from pathlib import Path
+from signal import signal, SIGINT
+import sys
+import traceback
+
 from telegram import Bot
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
-import traceback
 
-from PIL import Image
 from ffmpy import FFmpeg
-from pathlib import Path
-import os
-import sys
-from signal import signal, SIGINT
 import config
 import thequeue as q
 import text_queue as txt
-import glob
 
-gif_counter = 0
+GIF_COUNTER = 0
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -97,21 +96,21 @@ def echo(update, context):
     """Echo the user message."""
     logger.info(f'Starting Echo Handler')
     #update.message.reply_text(update.message.text)
-    update.message.reply_text("""Sorry this is not a gif or a picture and 
+    update.message.reply_text("""Sorry this is not a gif or a picture and
 I have no clue how to write text to that display thing there.
 I mean have you seen how that works? It's fucking nuts.
-I don't even know how to make letters that small and 
+I don't even know how to make letters that small and
 I'm just an everyday bot. \n\n
-Anyways, wanna give me a gif or a picture so I can resize it 
+Anyways, wanna give me a gif or a picture so I can resize it
 to 20x15 pixel and show you? :D""")
 
 def voice_handler(update, context):
-    update.message.reply_text("""Sorry this is not a gif or a picture and 
+    update.message.reply_text("""Sorry this is not a gif or a picture and
 I have no clue how to write text to that display thing there.
 I mean have you seen how that works? It's fucking nuts.
-I don't even know how to make letters that small and 
+I don't even know how to make letters that small and
 I'm just an everyday bot. \n\n
-Anyways, wanna give me a gif or a picture so I can resize it 
+Anyways, wanna give me a gif or a picture so I can resize it
 to 20x15 pixel and show you? :D""")
 
 
@@ -143,8 +142,8 @@ def image_handler(update, context):
 
 
 def put_gifs(telegram_file):
-    global gif_counter
-    out = f'{config.work_dir}/gifs/{gif_counter:06d}.gif'
+    global GIF_COUNTER
+    out = f'{config.work_dir}/gifs/{GIF_COUNTER:06d}.gif'
     try:
         ff = FFmpeg(
                 inputs={telegram_file: '-y -hide_banner -loglevel error'}, #TODO REmove the -y ??/
@@ -160,7 +159,7 @@ def put_gifs(telegram_file):
         #po.send(f"ffmpeg error\n{traceback.format_exec()}")
     try:
         q.mark_ready(out)
-        gif_counter += 1
+        GIF_COUNTER += 1
     except Exception as e:
         logger.error(traceback.format_exec())
 
