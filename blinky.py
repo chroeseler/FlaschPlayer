@@ -139,22 +139,6 @@ def display_gif(display, filepath, display_resolution):
     draw_gif(filepath)
 
 
-# periodically fetch brightness setting from file in config/
-
-# def set_brightness():
-#     """Lists all files in config folder and extracts the option from
-#     the file name."""
-#     options = [f for f in files(f"{config.work_dir}/config/")]
-#     try:
-#         brightness = float([i for i in options if 'BRIGHTNESS' in i][0][11:])
-#     except ValueError:
-#         brightness = 1.0
-#         logger.error(f'ERROR: Reset Brightness: {brightness}')
-#     except:
-#         brightness = 1.0
-#         logger.error("Something broken, should fix some time")
-#     return brightness
-
 
 def files(path):
     for file in os.listdir(path):
