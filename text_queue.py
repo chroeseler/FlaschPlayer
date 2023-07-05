@@ -63,7 +63,7 @@ def dotting(path):
             g_scale_value = dots.getpixel((x,y))
             if g_scale_value > 100:
                 furthest_x = x
-                letter_matrix['dots'].append((x,y+2))
+                letter_matrix['dots'].append((x,y+1))
 
     letter_matrix['size'] = (furthest_x, dots.size[1])
     return letter_matrix
