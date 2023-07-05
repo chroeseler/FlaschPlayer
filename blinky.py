@@ -172,8 +172,8 @@ def matches_pattern(filepath, pattern):
 def main(x_boxes: int=5, y_boxes: int=3, rotate_90:bool=False) -> None:
     display_resolution, display, _ = init(x_boxes, y_boxes, rotate_90)
     res_str = f'{display_resolution[0]}_{display_resolution[1]}'
-    if not os.path.isdir(f"{config.work_dir}/backgrounds/{res_str}/"):
-        raise FileNotFoundError(f'No background with fitting resolution availabel at {config.work_dir}/backgrounds/{res_str}/')
+    if not os.path.isdir(f"{config.work_dir}/data/backgrounds/{res_str}/"):
+        raise FileNotFoundError(f'No background with fitting resolution availabel at {config.work_dir}/data/backgrounds/{res_str}/')
     # Setup Media Wait list
 
     os.makedirs(f"{config.work_dir}/graveyard", exist_ok=True)
@@ -186,13 +186,13 @@ def main(x_boxes: int=5, y_boxes: int=3, rotate_90:bool=False) -> None:
             mood = config.mood.get()
             pattern = config.pattern.get()
             if config.playlistmode.get() == "mood":
-                backgrounds = glob.glob(f"{config.work_dir}/backgrounds/{res_str}/{mood}/*.gif")
+                backgrounds = glob.glob(f"{config.work_dir}/data/backgrounds/{res_str}/{mood}/*.gif")
             else:
-                backgrounds = glob.glob(f"{config.work_dir}/backgrounds/{res_str}/*/*.gif")
+                backgrounds = glob.glob(f"{config.work_dir}/data/backgrounds/{res_str}/*/*.gif")
                 backgrounds = list(filter(lambda f: matches_pattern(f, pattern), backgrounds))
                 if not backgrounds:
-                    logger.exception("No gif in %s/backgrounds/%s or %s/gifs", config.work_dir, mood, config.work_dir)
-                    backgrounds = glob.glob(f"{config.work_dir}/backgrounds/{res_str}/default/*.gif")
+                    logger.exception("No gif in %s/data/backgrounds/%s or %s/gifs", config.work_dir, mood, config.work_dir)
+                    backgrounds = glob.glob(f"{config.work_dir}/data/backgrounds/{res_str}/default/*.gif")
             next_gif = random.choice(backgrounds)
         try:
             display_gif(display, next_gif, display_resolution)
