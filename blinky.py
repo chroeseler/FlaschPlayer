@@ -191,7 +191,7 @@ def main(x_boxes: int=5, y_boxes: int=3, rotate_90:bool=False) -> None:
                 backgrounds = glob.glob(f"{config.work_dir}/data/backgrounds/{res_str}/*/*.gif")
                 backgrounds = list(filter(lambda f: matches_pattern(f, pattern), backgrounds))
                 if not backgrounds:
-                    logger.exception("No gif in %s/data/backgrounds/%s or %s/gifs", config.work_dir, mood, config.work_dir)
+                    logger.exception("No gif in %s/data/%s/backgrounds/%s or %s/gifs",  config.work_dir, res_str, mood, config.work_dir)
                     backgrounds = glob.glob(f"{config.work_dir}/data/backgrounds/{res_str}/default/*.gif")
             next_gif = random.choice(backgrounds)
         try:

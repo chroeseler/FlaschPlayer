@@ -15,3 +15,4 @@ queue.txt.lock
 letter_broken
 text_queue.txt
 text_queue.txt.lock
+config/db_lock

@@ -14,7 +14,7 @@ waiting_line = work_dir + "/config/waiting_line"
 
 waiting_line_lock = work_dir + "/config/waiting_line.lock"
 
-db_lock = FileLock(work_dir + '/config.settings')
+db_lock = FileLock(work_dir + '/config/db_lock')
 
 def get_config(param: str) -> str:
     with db_lock:

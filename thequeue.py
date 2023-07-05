@@ -24,7 +24,7 @@ def has_items() -> bool:
         return False
     return True
 
-def take() -> str | None:
+def take():
     with lock:
         if not has_items():
             logger.info('Queue is empty')
