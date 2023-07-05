@@ -2,6 +2,8 @@ import os
 import logging
 import dbm
 
+from filelock import FileLock
+
 logger = logging.getLogger("blinky.config")
 
 work_dir = os.environ['WORK_DIR']
@@ -12,13 +14,17 @@ waiting_line = work_dir + "/config/waiting_line"
 
 waiting_line_lock = work_dir + "/config/waiting_line.lock"
 
+db_lock = FileLock(work_dir + '/config.settings')
+
 def get_config(param: str) -> str:
-    with dbm.open(f'{work_dir}/config/settings', 'c') as db:
-        return db[param]
+    with db_lock:
+        with dbm.open(f'{work_dir}/config/settings', 'r') as db:
+            return db[param]
 
 def set_config(param: str, value: str) -> None:
-    with dbm.open(f'{work_dir}/config/settings', 'c') as db:
-        db[param] = value
+    with db_lock:
+        with dbm.open(f'{work_dir}/config/settings', 'c') as db:
+            db[param] = value
 
 class ConfigVar:
     def __init__(self, key, default, coerce_fn) -> None:
