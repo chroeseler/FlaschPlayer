@@ -205,7 +205,7 @@ def dbus(loop):
 
 
 
-def main(x_boxes: int=5, y_boxes: int=3, rotate_90:bool=False) -> None:
+def main(pill: threading.Event = threading.Event(), x_boxes: int=5, y_boxes: int=3, rotate_90:bool=False) -> None:
     display_resolution, display, _ = init(x_boxes, y_boxes, rotate_90)
     res_str = f'{display_resolution[0]}_{display_resolution[1]}'
     if not os.path.isdir(f"{Constants.work_dir}/data/backgrounds/{res_str}/"):
@@ -220,8 +220,9 @@ def main(x_boxes: int=5, y_boxes: int=3, rotate_90:bool=False) -> None:
     # Start the event loop.
     loop = EventLoop()
     t = threading.Thread(target=dbus, args=(loop,))
+    current_thread = threading.current_thread()
 
-    while display.is_running():
+    while display.is_running() and not pill.is_set():
         if not (next_gif := q.take()):
             mood = Options.mood
             pattern = Options.pattern

@@ -18,6 +18,7 @@ import logging
 #import pushover as po
 
 import os
+import threading
 from pathlib import Path
 from signal import signal, SIGINT
 import sys
@@ -54,7 +55,7 @@ def help(update, context):
 def text_speed(update, context):
     """Send a message when the command /text_speed is issued."""
     if context.args and isinstance(int(context.args[0]), int):
-        Options.text_speed = context.args[0]
+        Options.text_speed = int(context.args[0])
         update.message.reply_text(f"Text speed set to {context.args[0]}")
     else:
         update.message.reply_text(f"Text speed can only be a round number. Default is 70 e.g. /text_speed 70")
@@ -219,8 +220,13 @@ class System:
         else:
             logger.info("Stop already initiated")
 
-if __name__ == '__main__':
+def main(pill: threading.Event = threading.Event()) -> None:
+    s = System()
+    s.start()
+    pill.wait()
+    s.stop()
 
+if __name__ == '__main__':
     s = System()
     def handler(signal_received, frame):
         # Handle any cleanup here
@@ -232,6 +238,3 @@ if __name__ == '__main__':
 
     print('Running. Press CTRL-C to exit.')
     s.start()
-    while True:
-      # Do nothing and hog CPU forever until SIGINT received.
-      pass
