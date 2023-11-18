@@ -1,10 +1,12 @@
-import os
-import config
 import logging
-import board
-import layout
+import os
 import time
+
+import board
 import numpy as np
+
+import layout
+from config import main_options as Options
 
 logger = logging.getLogger("blinky.display")
 
@@ -29,7 +31,7 @@ class NeoPixelDisplay:
         self.strip.show()
 
     def set_brightness(self):
-        self.brightness = config.brightness.get()
+        self.brightness = Options.brightness
 
     def set_xy(self, x, y, value):
         led_id = self.matrix[y][x]
@@ -128,7 +130,7 @@ class PyGameDisplay:
                 color)
 
     def set_brightness(self):
-        self.brightness = config.brightness.get()
+        self.brightness = Options.brightness
 
     def set_xy(self, x, y, color):
         x_offset = x * self.pixel_size

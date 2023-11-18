@@ -4,21 +4,39 @@ import logging
 import os
 import random
 import sys
+import threading
 import time
 from pathlib import Path
 
 from PIL import Image, ImageSequence
 
-import config
+from config import main_options as Options
+from config import main_constants as Constants
 import display as d
 import text_queue as txt_q
 import thequeue as q
 
+from dasbus.loop import EventLoop
+from dasbus.server.interface import dbus_interface
+from dasbus.typing import Str
+from config_files.dbus_config import SESSION_BUS, BLINKY_OPTIONS
+from dasbus.xml import XMLGenerator
+
 logger = logging.getLogger("blinky.led")
 
 TEXT = None
-SKIP = Path(f'{config.work_dir}/config/skip')
+SKIP = Path(f'{Constants.work_dir}/config_files/skip')
 
+
+@dbus_interface(BLINKY_OPTIONS.interface_name)
+class HelloWorld(object):
+    def set_option(self, name: Str) -> Str:
+        """Generate a greeting.
+
+        :param name: someone to say hello
+        :return: a greeting
+        """
+        return "Hello {}!".format(name)
 
 def display_gif(display, filepath, display_resolution):
     """Main action point
@@ -81,7 +99,7 @@ def display_gif(display, filepath, display_resolution):
             text[dot][0] += display_resolution[0]
         while text:
             frame_counter += 1
-            if frame_counter % config.text_speed.get() != 0:
+            if frame_counter % Options.text_speed != 0:
                 yield text
             else:
                 remove = []
@@ -94,7 +112,7 @@ def display_gif(display, filepath, display_resolution):
                 yield text
 
     def bury_in_graveyard():
-        os.rename(filepath, f'{config.work_dir}/graveyard/{time.time()}.gif')
+        os.rename(filepath, f'{Constants.work_dir}/graveyard/{time.time()}.gif')
 
     def show_photo(image):
         # photos in gif container get shown 5 seconds
@@ -151,7 +169,7 @@ def init(x_boxes: int, y_boxes: int, rotate_90: bool):
     x_res, y_res = (x_boxes * 5, y_boxes * 4) if not rotate_90 else (x_boxes * 4, y_boxes * 5)
     display_resolution = (x_res, y_res)
 
-    if config.use_neopixel:
+    if Constants.use_neopixel:
         display = d.NeoPixelDisplay(led_count, x_boxes, y_boxes, rotate_90)
     else:
         display = d.PyGameDisplay(x_res, y_res, 50)
@@ -169,30 +187,52 @@ def matches_pattern(filepath, pattern):
     return matches
 
 
+def dbus(loop):
+    try:
+        # Create an instance of the class HelloWorld.
+        hello_world = HelloWorld()
+
+        # Publish the instance at /org/example/HelloWorld.
+        SESSION_BUS.publish_object(BLINKY_OPTIONS.object_path, hello_world)
+
+        # Register the service name org.example.HelloWorld.
+        SESSION_BUS.register_service(BLINKY_OPTIONS.service_name)
+
+        loop.run()
+        # Unregister the DBus service and objects.
+    finally:
+        SESSION_BUS.disconnect()
+
+
+
 def main(x_boxes: int=5, y_boxes: int=3, rotate_90:bool=False) -> None:
     display_resolution, display, _ = init(x_boxes, y_boxes, rotate_90)
     res_str = f'{display_resolution[0]}_{display_resolution[1]}'
-    if not os.path.isdir(f"{config.work_dir}/data/backgrounds/{res_str}/"):
-        raise FileNotFoundError(f'No background with fitting resolution availabel at {config.work_dir}/data/backgrounds/{res_str}/')
+    if not os.path.isdir(f"{Constants.work_dir}/data/backgrounds/{res_str}/"):
+        raise FileNotFoundError(f'No background with fitting resolution availabel at {Constants.work_dir}/data/backgrounds/{res_str}/')
     # Setup Media Wait list
 
-    os.makedirs(f"{config.work_dir}/graveyard", exist_ok=True)
-    # os.chown(f"{config.work_dir}/graveyard", uid=1000, gid=1000)
-    os.makedirs(f"{config.work_dir}/gifs", exist_ok=True)
-    # os.chown(f"{config.work_dir}/gifs", uid=1000, gid=1000)
+    os.makedirs(f"{Constants.work_dir}/graveyard", exist_ok=True)
+    # os.chown(f"{Constants.work_dir}/graveyard", uid=1000, gid=1000)
+    os.makedirs(f"{Constants.work_dir}/gifs", exist_ok=True)
+    # os.chown(f"{Constants.work_dir}/gifs", uid=1000, gid=1000)
+
+    # Start the event loop.
+    loop = EventLoop()
+    t = threading.Thread(target=dbus, args=(loop,))
 
     while display.is_running():
         if not (next_gif := q.take()):
-            mood = config.mood.get()
-            pattern = config.pattern.get()
-            if config.playlistmode.get() == "mood":
-                backgrounds = glob.glob(f"{config.work_dir}/data/backgrounds/{res_str}/{mood}/*.gif")
+            mood = Options.mood
+            pattern = Options.pattern
+            if Options.playlistmode == "mood":
+                backgrounds = glob.glob(f"{Constants.work_dir}/data/backgrounds/{res_str}/{mood}/*.gif")
             else:
-                backgrounds = glob.glob(f"{config.work_dir}/data/backgrounds/{res_str}/*/*.gif")
+                backgrounds = glob.glob(f"{Constants.work_dir}/data/backgrounds/{res_str}/*/*.gif")
                 backgrounds = list(filter(lambda f: matches_pattern(f, pattern), backgrounds))
                 if not backgrounds:
-                    logger.exception("No gif in %s/data/%s/backgrounds/%s or %s/gifs",  config.work_dir, res_str, mood, config.work_dir)
-                    backgrounds = glob.glob(f"{config.work_dir}/data/backgrounds/{res_str}/default/*.gif")
+                    logger.exception("No gif in %s/data/%s/backgrounds/%s or %s/gifs",  Constants.work_dir, res_str, mood, Constants.work_dir)
+                    backgrounds = glob.glob(f"{Constants.work_dir}/data/backgrounds/{res_str}/default/*.gif")
             next_gif = random.choice(backgrounds)
         try:
             display_gif(display, next_gif, display_resolution)

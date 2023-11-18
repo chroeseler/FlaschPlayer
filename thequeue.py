@@ -1,9 +1,11 @@
 import logging
 import os
-from filelock import FileLock
-import config
 
-queue_txt = f"{config.work_dir}/queue.txt"
+from filelock import FileLock
+
+from config import main_constants as Constants
+
+queue_txt = f"{Constants.work_dir}/queue.txt"
 lock = FileLock(f"{queue_txt}.lock")
 
 logger = logging.getLogger("blinky.queue")
