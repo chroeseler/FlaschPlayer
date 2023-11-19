@@ -11,7 +11,7 @@ from pathlib import Path
 from PIL import Image, ImageSequence
 
 from config import main_options as Options
-from config import main_constants as Constants
+from config import Constants
 import display as d
 import text_queue as txt_q
 import thequeue as q

@@ -3,7 +3,7 @@ import os
 
 from filelock import FileLock
 
-from config import main_constants as Constants
+from config import Constants
 
 queue_txt = f"{Constants.work_dir}/queue.txt"
 lock = FileLock(f"{queue_txt}.lock")

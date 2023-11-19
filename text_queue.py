@@ -5,7 +5,7 @@ from pathlib import Path
 from PIL import Image
 from filelock import FileLock
 
-from config import main_constants as Constants
+from config import Constants
 
 queue_txt = f"{Constants.work_dir}/text_queue.txt"
 lock = FileLock(f"{queue_txt}.lock")

@@ -24,7 +24,7 @@ from signal import signal, SIGINT
 import sys
 import traceback
 from config import main_options as Options
-from config import main_constants as Constants
+from config import Constants
 from telegram import Bot
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
