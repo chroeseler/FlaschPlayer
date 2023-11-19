@@ -3,9 +3,11 @@ Description=Starting blinky.py
 
 [Service]
 Type=simple
-ExecStart=/path/to/venv/bin/python3 /path/to/work_dir/blinky.py
+ExecStart=/path/to/venv/bin/python3 /path/to/work_dir/entry_point.py
 Restart=always
 StartLimitBurst=36000
 User=root
 Environment="WORK_DIR=/path/to/work_dir"
 Environment="NEOPIXEL=True"
+Environment="BOT_TOKEN=TOKEN"
+

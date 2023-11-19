@@ -1,17 +1,21 @@
 import logging
 import os
-from filelock import FileLock
-import config
 
-queue_txt = f"{config.work_dir}/queue.txt"
+from filelock import FileLock
+
+from config import Constants
+
+queue_txt = f"{Constants.work_dir}/queue.txt"
 lock = FileLock(f"{queue_txt}.lock")
 
 logger = logging.getLogger("blinky.queue")
 logging.getLogger("filelock").setLevel(logging.WARN)
 
+
 def setup() -> None:
-    with open(queue_txt,"a", encoding='utf-8') as fl:
+    with open(queue_txt, "a", encoding='utf-8') as fl:
         fl.write("")
+
 
 def mark_ready(path: str) -> None:
     with lock:
@@ -19,10 +23,12 @@ def mark_ready(path: str) -> None:
         with open(queue_txt, "a", encoding='utf-8') as fl:
             fl.write(path + "\n")
 
+
 def has_items() -> bool:
     if os.stat(queue_txt).st_size == 0:
         return False
     return True
+
 
 def take():
     with lock:

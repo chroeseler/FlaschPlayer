@@ -1,5 +1,4 @@
 __pycache__
-config/db_lock
 config/settings
 env
 graveyard
@@ -9,3 +8,4 @@ queue.txt
 queue.txt.lock
 text_queue.txt
 text_queue.txt.lock
+/config_files/dumped_config

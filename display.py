@@ -1,10 +1,12 @@
-import os
-import config
 import logging
-import board
-import layout
+import os
 import time
+
+import board
 import numpy as np
+
+import layout
+from config import main_options as Options
 
 logger = logging.getLogger("blinky.display")
 
@@ -15,12 +17,14 @@ class NeoPixelDisplay:
         if os.uname()[4][:3] == "arm":
             self.strip = __import__("neopixel").NeoPixel(board.D18, led_count, brightness=1, auto_write=False)
         else:
-            self.strip = [None]*led_count
+            self.strip = [None] * led_count
         self.matrix = layout.full_layout(x_boxes, y_boxes, rotate_90=rotate_90)
 
         self.led_count = led_count
+        self.brightness = Options.brightness
 
-    def is_running(self):
+    @staticmethod
+    def is_running():
         return True
 
     def show(self):
@@ -29,7 +33,7 @@ class NeoPixelDisplay:
         self.strip.show()
 
     def set_brightness(self):
-        self.brightness = config.brightness.get()
+        self.brightness = Options.brightness
 
     def set_xy(self, x, y, value):
         led_id = self.matrix[y][x]
@@ -44,7 +48,7 @@ class NeoPixelDisplay:
         else:
             new_value = value
 
-        self.strip[led_id] =  tuple(self.brightness * x  for x in new_value)
+        self.strip[led_id] = tuple(self.brightness * x for x in new_value)
 
     def flash(self):
         for i in range(self.led_count):
@@ -87,6 +91,7 @@ class NeoPixelDisplay:
         except KeyboardInterrupt:
             self.flash()
 
+
 class PyGameDisplay:
     def __init__(self, x_pixels, y_pixels, pixel_size):
         self.pg = __import__("pygame")
@@ -97,6 +102,7 @@ class PyGameDisplay:
         pg.display.set_mode((surface_x, surface_y))
         self.surface = pg.Surface((surface_x, surface_y))
         pg.display.flip()
+        self.brightness = Options.brightness
         self.pixel_size = pixel_size
         self.x_pixels = x_pixels
         self.y_pixels = y_pixels
@@ -124,14 +130,14 @@ class PyGameDisplay:
     def paint_random(self):
         color = tuple(np.random.choice(range(256), size=3))
         self.set_xy(np.random.choice(range(self.x_pixels)),
-                np.random.choice(range(self.y_pixels)),
-                color)
+            np.random.choice(range(self.y_pixels)),
+            color)
 
     def set_brightness(self):
-        self.brightness = config.brightness.get()
+        self.brightness = Options.brightness
 
     def set_xy(self, x, y, color):
         x_offset = x * self.pixel_size
         y_offset = y * self.pixel_size
-        color  = tuple(self.brightness * x for x in color)
+        color = tuple(self.brightness * x for x in color)
         self.pg.draw.rect(self.surface, color, self.pg.Rect(x_offset, y_offset, self.pixel_size, self.pixel_size))

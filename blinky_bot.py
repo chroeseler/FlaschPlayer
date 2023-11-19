@@ -15,22 +15,19 @@ Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
 import logging
-#import pushover as po
-
 import os
-from pathlib import Path
-from signal import signal, SIGINT
 import sys
+import threading
 import traceback
-
-from telegram import Bot
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-
+from pathlib import Path
+from signal import SIGINT, signal
 
 from ffmpy import FFmpeg
-import config
-import thequeue as q
+from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
+
 import text_queue as txt
+import thequeue as q
+from config import Constants, main_options as Options
 
 GIF_COUNTER = 0
 
@@ -54,48 +51,55 @@ def help(update, context):
 def text_speed(update, context):
     """Send a message when the command /text_speed is issued."""
     if context.args and isinstance(int(context.args[0]), int):
-        config.text_speed.set(context.args[0])
+        Options.text_speed = int(context.args[0])
         update.message.reply_text(f"Text speed set to {context.args[0]}")
     else:
         update.message.reply_text(f"Text speed can only be a round number. Default is 70 e.g. /text_speed 70")
 
+
 def brightness(update, context):
     """Send a message when the command /brightness is issued."""
     if context.args:
-        config.brightness.set(context.args[0])
-        update.message.reply_text(f"Brightness set to {context.args[0]}")
+        brightness = float(context.args[0]) / 100
+        Options.brightness = brightness
+        update.message.reply_text(f"Brightness set to {context.args[0]} : {brightness}")
     else:
-        update.message.reply_text(f"What brightness do you want dear? E.g. /brightness 0.4")
+        update.message.reply_text(f"What percent of brightness do you want dear? E.g. /brightness 40")
+
 
 def mood(update, context):
     """Send a message when the command /mood is issued."""
-    config.mood.set(context.args[0])
-    config.playlistmode.set("mood")
+    Options.mood.set(context.args[0])
+    Options.playlistmode.set("mood")
     update.message.reply_text(f"Mood set {context.args[0]}")
+
 
 def play(update, context):
     """Send a message when the command /mood is issued."""
     if context.args:
-        config.pattern.set(context.args[0])
-        config.playlistmode.set("pattern")
+        Options.pattern.set(context.args[0])
+        Options.playlistmode.set("pattern")
         update.message.reply_text(f"Playing anything matching {context.args[0]} — note that it may not match anything")
     else:
         update.message.reply_text("You need to provide something to select GIFs from our catalogue")
 
+
 def text(update, context):
-    """Writing text ontop of what is playing if issued with the /text command"""
+    """Writing text on top of what is playing if issued with the /text command"""
     if len(update.message.text) > 120:
         update.message.reply_text("Sorry that's quite the text and I'm a little lazy. Can you make it shorter?")
     else:
         txt.put(update.message.text)
 
+
 def skip(update, context):
-    Path(f'{config.work_dir}/config/skip').touch()
+    Path(f'{Constants.work_dir}/config/skip').touch()
+
 
 def echo(update, context):
     """Echo the user message."""
     logger.info(f'Starting Echo Handler')
-    #update.message.reply_text(update.message.text)
+    # update.message.reply_text(update.message.text)
     update.message.reply_text("""Sorry this is not a gif or a picture and
 I have no clue how to write text to that display thing there.
 I mean have you seen how that works? It's fucking nuts.
@@ -103,6 +107,7 @@ I don't even know how to make letters that small and
 I'm just an everyday bot. \n\n
 Anyways, wanna give me a gif or a picture so I can resize it
 to 20x15 pixel and show you? :D""")
+
 
 def voice_handler(update, context):
     update.message.reply_text("""Sorry this is not a gif or a picture and
@@ -119,15 +124,17 @@ def error(update, context):
     logger.warning('Update "%s" caused error "%s"', update, context.error)
     error = traceback.format_exc()
     logger.error(f"Error: {str(context.error)}\n{error}")
-    #po.send(f"Error: {str(context.error)}\n{error}")
+
+
+
 
 def gif_handler(update, context):
     logger.info(f'Starting Gif Handler')
     if update.message.document.file_size < 20000000:
         mp4 = context.bot.getFile(update.message.document.file_id)
-        mp4.download(f'{config.work_dir}/media.mp4')
-        logger.info(os.path.getsize(f'{config.work_dir}/media.mp4'))
-        put_gifs(f'{config.work_dir}/media.mp4')
+        mp4.download(f'{Constants.work_dir}/media.mp4')
+        logger.info(os.path.getsize(f'{Constants.work_dir}/media.mp4'))
+        put_gifs(f'{Constants.work_dir}/media.mp4')
     else:
         update.message.reply_text("""Wow! Sry that's way to big!
                 I'm just a little pi and I can't handle that much traffic.
@@ -137,31 +144,31 @@ def gif_handler(update, context):
 def image_handler(update, context):
     logger.info(f'Starting Image Handler')
     pic = context.bot.getFile(update.message.photo[-1].file_id)
-    pic.download(f'{config.work_dir}/photo.gif')
-    put_gifs(f'{config.work_dir}/photo.gif')
+    pic.download(f'{Constants.work_dir}/photo.gif')
+    put_gifs(f'{Constants.work_dir}/photo.gif')
 
 
 def put_gifs(telegram_file):
     global GIF_COUNTER
-    out = f'{config.work_dir}/gifs/{GIF_COUNTER:06d}.gif'
+    out = f'{Constants.work_dir}/gifs/{GIF_COUNTER:06d}.gif'
     try:
         ff = FFmpeg(
-                inputs={telegram_file: '-y -hide_banner -loglevel error'}, #TODO REmove the -y ??/
-                outputs={out: '-s 20x15'})
+            inputs={telegram_file: '-y -hide_banner -loglevel error'},  # TODO Remove the -y ??/
+            outputs={out: '-s 20x15'})
         ff.run()
         try:
             with open(out) as f:
-                logger.info(f'Gif creation succesfull: {out}')
+                logger.info(f'Gif creation successful: {out}')
         except IOError:
             logger.warning(f'Gif creation failed: {out}')
     except Exception as e:
         logger.warning('FFmpeg Error!')
-        #po.send(f"ffmpeg error\n{traceback.format_exec()}")
     try:
         q.mark_ready(out)
         GIF_COUNTER += 1
     except Exception as e:
         logger.error(traceback.format_exec())
+
 
 def make_updater():
     token = os.environ['BOT_TOKEN']
@@ -185,7 +192,7 @@ def make_updater():
     dp.add_handler(MessageHandler(Filters.photo, image_handler))
     dp.add_handler(MessageHandler(Filters.document.mime_type("video/mp4"), gif_handler))
 
-    # on noncommand i.e message - echo the message on Telegram
+    # on command i.e. message - echo the message on Telegram
     dp.add_handler(MessageHandler(Filters.text, text))
 
     # log all errors
@@ -193,12 +200,14 @@ def make_updater():
 
     return updater
 
+
 stopped = False
+
 
 class System:
     def __init__(self):
         """Start the bot."""
-        # Create the Updater and pass it your bot's token.
+        # Create the Updater and pass it your bots token.
         # Make sure to set use_context=True to use the new context based callbacks
         # Post version 12 this will no longer be necessary
         logger.info('##########################   bot  #########')
@@ -214,24 +223,31 @@ class System:
         global stopped
         if not stopped:
             stopped = 1
-            self.updater.stop() # this function can take seconds!
+            self.updater.stop()  # this function can take seconds!
             self.updater.idle()
         else:
             logger.info("Stop already initiated")
 
-if __name__ == '__main__':
 
+def main(pill: threading.Event = threading.Event()) -> None:
     s = System()
+    s.start()
+    pill.wait()
+    s.stop()
+
+
+if __name__ == '__main__':
+    s = System()
+
+
     def handler(signal_received, frame):
         # Handle any cleanup here
         logger.info('SIGINT or CTRL-C detected. Exiting gracefully')
         s.stop()
         sys.exit(0)
 
+
     signal(SIGINT, handler)
 
     print('Running. Press CTRL-C to exit.')
     s.start()
-    while True:
-      # Do nothing and hog CPU forever until SIGINT received.
-      pass
