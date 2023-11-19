@@ -25,7 +25,6 @@ class Options:
     pattern: str = 'default'
     init: bool = False
 
-
     def __post_init__(self):
         if os.path.exists(Constants.saved_config):
             with open(Constants.saved_config, 'r') as save_file:

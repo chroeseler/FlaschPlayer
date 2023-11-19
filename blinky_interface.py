@@ -1,5 +1,3 @@
-import threading
-
 from flask import Flask, render_template, request
 
 import text_queue as txt

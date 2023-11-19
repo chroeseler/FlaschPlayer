@@ -140,7 +140,6 @@ def display_gif(display, filepath, display_resolution):
     draw_gif(filepath)
 
 
-
 def files(path):
     for file in os.listdir(path):
         if os.path.isfile(os.path.join(path, file)):
@@ -170,7 +169,7 @@ def matches_pattern(filepath, pattern):
     return matches
 
 
-def main(pill: threading.Event = threading.Event(), x_boxes: int=5, y_boxes: int=3, rotate_90:bool=False) -> None:
+def main(pill: threading.Event = threading.Event(), x_boxes: int = 5, y_boxes: int = 3, rotate_90: bool = False) -> None:
     display_resolution, display, _ = init(x_boxes, y_boxes, rotate_90)
     res_str = f'{display_resolution[0]}_{display_resolution[1]}'
     if not os.path.isdir(f"{Constants.work_dir}/data/backgrounds/{res_str}/"):
@@ -181,7 +180,6 @@ def main(pill: threading.Event = threading.Event(), x_boxes: int=5, y_boxes: int
     # os.chown(f"{Constants.work_dir}/graveyard", uid=1000, gid=1000)
     os.makedirs(f"{Constants.work_dir}/gifs", exist_ok=True)
     # os.chown(f"{Constants.work_dir}/gifs", uid=1000, gid=1000)
-
 
     while display.is_running() and not pill.is_set():
         if not (next_gif := q.take()):

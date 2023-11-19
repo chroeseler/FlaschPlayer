@@ -56,20 +56,23 @@ def text_speed(update, context):
     else:
         update.message.reply_text(f"Text speed can only be a round number. Default is 70 e.g. /text_speed 70")
 
+
 def brightness(update, context):
     """Send a message when the command /brightness is issued."""
     if context.args:
-        brightness = float(context.args[0])/100
+        brightness = float(context.args[0]) / 100
         Options.brightness = brightness
         update.message.reply_text(f"Brightness set to {context.args[0]} : {brightness}")
     else:
         update.message.reply_text(f"What percent of brightness do you want dear? E.g. /brightness 40")
+
 
 def mood(update, context):
     """Send a message when the command /mood is issued."""
     Options.mood.set(context.args[0])
     Options.playlistmode.set("mood")
     update.message.reply_text(f"Mood set {context.args[0]}")
+
 
 def play(update, context):
     """Send a message when the command /mood is issued."""
@@ -80,6 +83,7 @@ def play(update, context):
     else:
         update.message.reply_text("You need to provide something to select GIFs from our catalogue")
 
+
 def text(update, context):
     """Writing text on top of what is playing if issued with the /text command"""
     if len(update.message.text) > 120:
@@ -87,13 +91,15 @@ def text(update, context):
     else:
         txt.put(update.message.text)
 
+
 def skip(update, context):
     Path(f'{Constants.work_dir}/config/skip').touch()
+
 
 def echo(update, context):
     """Echo the user message."""
     logger.info(f'Starting Echo Handler')
-    #update.message.reply_text(update.message.text)
+    # update.message.reply_text(update.message.text)
     update.message.reply_text("""Sorry this is not a gif or a picture and
 I have no clue how to write text to that display thing there.
 I mean have you seen how that works? It's fucking nuts.
@@ -101,6 +107,7 @@ I don't even know how to make letters that small and
 I'm just an everyday bot. \n\n
 Anyways, wanna give me a gif or a picture so I can resize it
 to 20x15 pixel and show you? :D""")
+
 
 def voice_handler(update, context):
     update.message.reply_text("""Sorry this is not a gif or a picture and
@@ -117,7 +124,9 @@ def error(update, context):
     logger.warning('Update "%s" caused error "%s"', update, context.error)
     error = traceback.format_exc()
     logger.error(f"Error: {str(context.error)}\n{error}")
-    #po.send(f"Error: {str(context.error)}\n{error}")
+
+
+
 
 def gif_handler(update, context):
     logger.info(f'Starting Gif Handler')
@@ -144,8 +153,8 @@ def put_gifs(telegram_file):
     out = f'{Constants.work_dir}/gifs/{GIF_COUNTER:06d}.gif'
     try:
         ff = FFmpeg(
-                inputs={telegram_file: '-y -hide_banner -loglevel error'}, #TODO Remove the -y ??/
-                outputs={out: '-s 20x15'})
+            inputs={telegram_file: '-y -hide_banner -loglevel error'},  # TODO Remove the -y ??/
+            outputs={out: '-s 20x15'})
         ff.run()
         try:
             with open(out) as f:
@@ -154,12 +163,12 @@ def put_gifs(telegram_file):
             logger.warning(f'Gif creation failed: {out}')
     except Exception as e:
         logger.warning('FFmpeg Error!')
-        #po.send(f"ffmpeg error\n{traceback.format_exec()}")
     try:
         q.mark_ready(out)
         GIF_COUNTER += 1
     except Exception as e:
         logger.error(traceback.format_exec())
+
 
 def make_updater():
     token = os.environ['BOT_TOKEN']
@@ -191,7 +200,9 @@ def make_updater():
 
     return updater
 
+
 stopped = False
+
 
 class System:
     def __init__(self):
@@ -212,10 +223,11 @@ class System:
         global stopped
         if not stopped:
             stopped = 1
-            self.updater.stop() # this function can take seconds!
+            self.updater.stop()  # this function can take seconds!
             self.updater.idle()
         else:
             logger.info("Stop already initiated")
+
 
 def main(pill: threading.Event = threading.Event()) -> None:
     s = System()
@@ -223,13 +235,17 @@ def main(pill: threading.Event = threading.Event()) -> None:
     pill.wait()
     s.stop()
 
+
 if __name__ == '__main__':
     s = System()
+
+
     def handler(signal_received, frame):
         # Handle any cleanup here
         logger.info('SIGINT or CTRL-C detected. Exiting gracefully')
         s.stop()
         sys.exit(0)
+
 
     signal(SIGINT, handler)
 
