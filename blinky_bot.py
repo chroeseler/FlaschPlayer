@@ -15,23 +15,19 @@ Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
 import logging
-#import pushover as po
-
 import os
-import threading
-from pathlib import Path
-from signal import signal, SIGINT
 import sys
+import threading
 import traceback
-from config import main_options as Options
-from config import Constants
-from telegram import Bot
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-
+from pathlib import Path
+from signal import SIGINT, signal
 
 from ffmpy import FFmpeg
-import thequeue as q
+from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
+
 import text_queue as txt
+import thequeue as q
+from config import Constants, main_options as Options
 
 GIF_COUNTER = 0
 
@@ -63,10 +59,11 @@ def text_speed(update, context):
 def brightness(update, context):
     """Send a message when the command /brightness is issued."""
     if context.args:
-        Options.brightness = context.args[0]
-        update.message.reply_text(f"Brightness set to {context.args[0]}")
+        brightness = float(context.args[0])/100
+        Options.brightness = brightness
+        update.message.reply_text(f"Brightness set to {context.args[0]} : {brightness}")
     else:
-        update.message.reply_text(f"What brightness do you want dear? E.g. /brightness 0.4")
+        update.message.reply_text(f"What percent of brightness do you want dear? E.g. /brightness 40")
 
 def mood(update, context):
     """Send a message when the command /mood is issued."""

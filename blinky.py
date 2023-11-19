@@ -10,33 +10,16 @@ from pathlib import Path
 
 from PIL import Image, ImageSequence
 
-from config import main_options as Options
-from config import Constants
 import display as d
 import text_queue as txt_q
 import thequeue as q
-
-from dasbus.loop import EventLoop
-from dasbus.server.interface import dbus_interface
-from dasbus.typing import Str
-from config_files.dbus_config import SESSION_BUS, BLINKY_OPTIONS
-from dasbus.xml import XMLGenerator
+from config import Constants, main_options as Options
 
 logger = logging.getLogger("blinky.led")
 
 TEXT = None
 SKIP = Path(f'{Constants.work_dir}/config_files/skip')
 
-
-@dbus_interface(BLINKY_OPTIONS.interface_name)
-class HelloWorld(object):
-    def set_option(self, name: Str) -> Str:
-        """Generate a greeting.
-
-        :param name: someone to say hello
-        :return: a greeting
-        """
-        return "Hello {}!".format(name)
 
 def display_gif(display, filepath, display_resolution):
     """Main action point
@@ -187,24 +170,6 @@ def matches_pattern(filepath, pattern):
     return matches
 
 
-def dbus(loop):
-    try:
-        # Create an instance of the class HelloWorld.
-        hello_world = HelloWorld()
-
-        # Publish the instance at /org/example/HelloWorld.
-        SESSION_BUS.publish_object(BLINKY_OPTIONS.object_path, hello_world)
-
-        # Register the service name org.example.HelloWorld.
-        SESSION_BUS.register_service(BLINKY_OPTIONS.service_name)
-
-        loop.run()
-        # Unregister the DBus service and objects.
-    finally:
-        SESSION_BUS.disconnect()
-
-
-
 def main(pill: threading.Event = threading.Event(), x_boxes: int=5, y_boxes: int=3, rotate_90:bool=False) -> None:
     display_resolution, display, _ = init(x_boxes, y_boxes, rotate_90)
     res_str = f'{display_resolution[0]}_{display_resolution[1]}'
@@ -217,10 +182,6 @@ def main(pill: threading.Event = threading.Event(), x_boxes: int=5, y_boxes: int
     os.makedirs(f"{Constants.work_dir}/gifs", exist_ok=True)
     # os.chown(f"{Constants.work_dir}/gifs", uid=1000, gid=1000)
 
-    # Start the event loop.
-    loop = EventLoop()
-    t = threading.Thread(target=dbus, args=(loop,))
-    current_thread = threading.current_thread()
 
     while display.is_running() and not pill.is_set():
         if not (next_gif := q.take()):
