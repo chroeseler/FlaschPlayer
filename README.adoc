@@ -46,13 +46,15 @@ Install https://direnv.net/[direnv]
 ....
 echo 'export BOT_TOKEN=xyz-your-token-xyz' >> .envrc
 echo 'export WAIT_DIR=/some/directory' >> .envrc
+# If you want to use actuel led-stripe
+echo 'export NEOPIXEL=True' >> .envrc
 ....
 
 == Start Everything
 
 [source,sh]
 ....
-honcho start
+python ./entry_point.py
 ....
 
 == Development Display
