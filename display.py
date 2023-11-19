@@ -99,6 +99,7 @@ class PyGameDisplay:
         pg.display.set_mode((surface_x, surface_y))
         self.surface = pg.Surface((surface_x, surface_y))
         pg.display.flip()
+        self.brightness = Options.brightness
         self.pixel_size = pixel_size
         self.x_pixels = x_pixels
         self.y_pixels = y_pixels

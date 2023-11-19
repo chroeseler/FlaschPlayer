@@ -1,4 +1,4 @@
-"""Blinky: Main contributer to FlaschPlayer"""
+"""Blinky: Main contributor to FlaschPlayer"""
 import glob
 import logging
 import os
@@ -24,9 +24,9 @@ SKIP = Path(f'{Constants.work_dir}/config_files/skip')
 def display_gif(display, filepath, display_resolution):
     """Main action point
 
-    The methods takes the background gif and sets frame by frame
+    The methods take the background gif and sets frame by frame
     every pixel. After every frame the display.show() method is called.
-    Also the waiting list is checked. If a gif is in the list
+    Also, the waiting list is checked. If a gif is in the list
     it will be displayed immediately. This repeats until no further
     gifs are in line"""
 
@@ -174,7 +174,7 @@ def main(pill: threading.Event = threading.Event(), x_boxes: int=5, y_boxes: int
     display_resolution, display, _ = init(x_boxes, y_boxes, rotate_90)
     res_str = f'{display_resolution[0]}_{display_resolution[1]}'
     if not os.path.isdir(f"{Constants.work_dir}/data/backgrounds/{res_str}/"):
-        raise FileNotFoundError(f'No background with fitting resolution availabel at {Constants.work_dir}/data/backgrounds/{res_str}/')
+        raise FileNotFoundError(f'No background with fitting resolution available at {Constants.work_dir}/data/backgrounds/{res_str}/')
     # Setup Media Wait list
 
     os.makedirs(f"{Constants.work_dir}/graveyard", exist_ok=True)

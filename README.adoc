@@ -57,7 +57,7 @@ honcho start
 
 == Development Display
 
-There are different display implementations in `display.py`. They all implment the same API:
+There are different display implementations in `display.py`. They all implement the same API:
 
 - `set_xy(x, y, (r, g, b))` will set the RGB value for a given pixel
 - `show()` will flush the values to the display

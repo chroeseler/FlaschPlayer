@@ -81,7 +81,7 @@ def play(update, context):
         update.message.reply_text("You need to provide something to select GIFs from our catalogue")
 
 def text(update, context):
-    """Writing text ontop of what is playing if issued with the /text command"""
+    """Writing text on top of what is playing if issued with the /text command"""
     if len(update.message.text) > 120:
         update.message.reply_text("Sorry that's quite the text and I'm a little lazy. Can you make it shorter?")
     else:
@@ -144,12 +144,12 @@ def put_gifs(telegram_file):
     out = f'{Constants.work_dir}/gifs/{GIF_COUNTER:06d}.gif'
     try:
         ff = FFmpeg(
-                inputs={telegram_file: '-y -hide_banner -loglevel error'}, #TODO REmove the -y ??/
+                inputs={telegram_file: '-y -hide_banner -loglevel error'}, #TODO Remove the -y ??/
                 outputs={out: '-s 20x15'})
         ff.run()
         try:
             with open(out) as f:
-                logger.info(f'Gif creation succesfull: {out}')
+                logger.info(f'Gif creation successful: {out}')
         except IOError:
             logger.warning(f'Gif creation failed: {out}')
     except Exception as e:
@@ -183,7 +183,7 @@ def make_updater():
     dp.add_handler(MessageHandler(Filters.photo, image_handler))
     dp.add_handler(MessageHandler(Filters.document.mime_type("video/mp4"), gif_handler))
 
-    # on noncommand i.e message - echo the message on Telegram
+    # on command i.e. message - echo the message on Telegram
     dp.add_handler(MessageHandler(Filters.text, text))
 
     # log all errors
@@ -196,7 +196,7 @@ stopped = False
 class System:
     def __init__(self):
         """Start the bot."""
-        # Create the Updater and pass it your bot's token.
+        # Create the Updater and pass it your bots token.
         # Make sure to set use_context=True to use the new context based callbacks
         # Post version 12 this will no longer be necessary
         logger.info('##########################   bot  #########')
