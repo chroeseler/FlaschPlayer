@@ -20,8 +20,8 @@ import os
 from pathlib import Path
 
 from ffmpy import FFmpeg
-from telegram import ForceReply, Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram import ForceReply, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, ConversationHandler
 
 import text_queue as txt
 import thequeue as q
@@ -33,6 +33,69 @@ GIF_COUNTER = 0
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
+
+@dataclasses.dataclass
+class Access:
+    admin: int = int(os.environ['TELEGRAM_ADMIN'])
+    users: list[int, ...] = dataclasses.field(default_factory=lambda: [])
+
+
+USER_ACCESS = Access()
+FUNCTIONS, ACCESS_ADD, ACCESS_REMOVE = range(3)
+
+
+def got_access(user_id: int) -> bool:
+    return user_id == USER_ACCESS.admin or user_id in USER_ACCESS.users
+
+def update_access(user_id: int, remove: bool = False) -> None:
+    if not remove:
+        USER_ACCESS.users.append(user_id)
+    else:
+        USER_ACCESS.users.remove(user_id)
+
+
+async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not got_access(update.message.from_user.id):
+        await update.message.reply_text('Sorry, you do not have access to this functions, but I\'ll ask if it\'s cool that you do.')
+        await context.bot.send_message(USER_ACCESS.admin, f'{update.message.from_user.first_name} {update.message.from_user.last_name} tried to access admin functions')
+        await context.bot.send_message(USER_ACCESS.admin, f'{update.message.from_user.username}')
+        await context.bot.send_message(USER_ACCESS.admin, f'{update.message.from_user.id}')
+        return
+
+    reply_keyboard = [['Add Access', "Remove Access", "Settings"]]
+
+    await update.message.reply_text(
+        'What can I do for you?',
+        reply_markup=ReplyKeyboardMarkup(
+            reply_keyboard, one_time_keyboard=True
+        ),
+    )
+    return FUNCTIONS
+
+
+async def add_access_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.message.reply_text('Please give the user id to be added.')
+    return ACCESS_ADD
+
+
+async def remove_access_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.message.reply_text('Please give the user id to be removed.')
+    return ACCESS_REMOVE
+
+
+async def add_access(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    update_access(update.message.id, remove=False)
+    return ConversationHandler.END
+
+
+async def remove_access(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    update_access(update.message.id, remove=True)
+    return ConversationHandler.END
+
+
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    return ConversationHandler.END
+
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /help is issued."""
@@ -164,7 +227,7 @@ def main() -> None:
     application = Application.builder().token(token).build()
 
     # on different commands - answer in Telegram
-    application.add_handler(CommandHandler("start", admin))
+    #application.add_handler(CommandHandler("start", admin))
     application.add_handler(CommandHandler("help", help_command))
 
     application.add_handler(CommandHandler("brightness", brightness))
@@ -178,6 +241,30 @@ def main() -> None:
 
     # on non command i.e message - echo the message on Telegram
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
+
+    # conversion to add or remove user
+    conv_handler = ConversationHandler(
+
+        entry_points=[CommandHandler("start", admin)],
+
+        states={
+            #"Access", "Settings"
+            FUNCTIONS: [
+                MessageHandler(filters.Regex("^Add Access$"), add_access_input),
+                MessageHandler(filters.Regex("^Remove Access$"), remove_access_input),
+                #MessageHandler(filters.Regex("^Settings$"), other_function)
+            ],
+            #MessageHandler(Filters.text & ~Filters.command, receive_input)
+            ACCESS_ADD: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_access)],
+            ACCESS_REMOVE: [MessageHandler(filters.TEXT & ~filters.COMMAND, remove_access)],
+        },
+
+        fallbacks=[CommandHandler("cancel", cancel)],
+
+    )
+
+
+    application.add_handler(conv_handler)
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
