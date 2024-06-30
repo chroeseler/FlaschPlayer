@@ -1,4 +1,6 @@
 """Blinky: Main contributor to FlaschPlayer"""
+import dataclasses
+import datetime
 import glob
 import logging
 import os
@@ -20,6 +22,9 @@ logger = logging.getLogger("blinky.led")
 TEXT = None
 SKIP = Path(f'{Constants.work_dir}/config_files/skip')
 
+@dataclasses.dataclass
+class data(kw=True):
+    reminder_time: time.monotonic = time.monotonic()
 
 def display_gif(display, filepath, display_resolution):
     """Main action point
@@ -42,6 +47,10 @@ def display_gif(display, filepath, display_resolution):
                     new_rgb = tuple([x * 0.15 for x in old_rgb])
                     display.set_xy(x, y, new_rgb)
         if txt:
+            data.reminder_time = datetime.datetime.now()
+            write_text(txt, display_resolution)
+        elif time.monotonic() - data.reminder_time > Options.adtime:
+            txt_q.put('Write me at t.me/flaschplayerbot')
             write_text(txt, display_resolution)
         if display.is_running():
             display.show()
@@ -72,7 +81,7 @@ def display_gif(display, filepath, display_resolution):
                 TEXT = None
                 return None
 
-    def text_generator(text, display_resolution):
+    def text_generator(text: str, display_resolution: list[int, int]):
         """The generator gets a list with the dot coordinates of the text letters.
         They all get moved on the x axis to the be outside on the of the display
         and then get moved back one x coordinate per yield. If an x coordinate reaches 0
@@ -123,7 +132,7 @@ def display_gif(display, filepath, display_resolution):
                 if should_abort():
                     break
 
-    def draw_gif(filepath):
+    def draw_gif(filepath: Path):
         total_loop_duration = 500
         logger.info('Playing: %s', filepath)
         img = Image.open(filepath)
@@ -140,7 +149,7 @@ def display_gif(display, filepath, display_resolution):
     draw_gif(filepath)
 
 
-def files(path):
+def files(path: Path):
     for file in os.listdir(path):
         if os.path.isfile(os.path.join(path, file)):
             yield file

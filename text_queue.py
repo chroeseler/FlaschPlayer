@@ -18,7 +18,7 @@ def setup():
     open(queue_txt, "a").write("")
 
 
-def put(text):
+def put(text: str):
     def add_char_coord(char, width, text):
         if ord(char) == 32:
             return text, width + 3
@@ -58,7 +58,7 @@ def pop():
             return json.loads(firstLine)
 
 
-def dotting(path):
+def dotting(path: Path):
     img = Image.open(path)
     dots = img.convert('L')
     letter_matrix = {'dots': []}
@@ -74,7 +74,7 @@ def dotting(path):
     return letter_matrix
 
 
-def get_coords(char):
+def get_coords(char: str):
     try:
         return dotting(LETTERS.joinpath('thin4_' + '{:05d}'.format(ord(char)) + '.png'))
     except FileNotFoundError:

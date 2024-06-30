@@ -26,6 +26,7 @@ class Options:
     mood: str = 'default'
     pattern: str = 'default'
     led_type: Literal['rgb', 'grb'] = 'grb'
+    adtime: int = 1200
     init: bool = False
 
     def __post_init__(self):
