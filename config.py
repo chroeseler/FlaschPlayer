@@ -2,7 +2,9 @@ import dataclasses
 import json
 import logging
 import os
+from typing import Literal
 from pathlib import Path
+from typing import Literal
 
 logger = logging.getLogger("blinky.config")
 
@@ -23,6 +25,7 @@ class Options:
     playlistmode: str = 'mood'
     mood: str = 'default'
     pattern: str = 'default'
+    led_type: Literal['rgb', 'grb'] = 'grb'
     init: bool = False
 
     def __post_init__(self):

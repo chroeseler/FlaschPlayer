@@ -14,7 +14,7 @@ logger = logging.getLogger("blinky.display")
 class NeoPixelDisplay:
     def __init__(self, led_count: int, x_boxes: int, y_boxes: int, rotate_90: bool):
 
-        if os.uname()[4][:3] == "arm":
+        if os.uname()[4][:3] == "arm" or os.uname()[4] == 'aarch64':
             self.strip = __import__("neopixel").NeoPixel(board.D18, led_count, brightness=1, auto_write=False)
         else:
             self.strip = [None] * led_count
@@ -22,33 +22,34 @@ class NeoPixelDisplay:
 
         self.led_count = led_count
         self.brightness = Options.brightness
+        self.led_type = Options.led_type
 
     @staticmethod
     def is_running():
         return True
 
     def show(self):
-        if os.uname()[4][:3] != "arm":
+        if os.uname()[4][:3] != "arm" and os.uname()[4] != 'aarch64':
             logger.error("Not an ARM thing!")
         self.strip.show()
 
     def set_brightness(self):
         self.brightness = Options.brightness
 
-    def set_xy(self, x, y, value):
+    def set_xy(self, x: int, y: int, value: list[int, int, int]):
         led_id = self.matrix[y][x]
         logger.debug('set_xy x: %s, y: %s, val: %s, id: %s', x, y, value, led_id)
-        new_value = []
         dark = True
         for color in value:
             if color > 3:
                 dark = False
         if dark:
-            new_value = (0, 0, 0)
-        else:
-            new_value = value
+            value = (0, 0, 0)
 
-        self.strip[led_id] = tuple(self.brightness * x for x in new_value)
+        if self.led_type == 'grb':
+            value = [value[1], value[0], value[2]]
+
+        self.strip[led_id] = tuple(self.brightness * x for x in value)
 
     def flash(self):
         for i in range(self.led_count):
@@ -68,12 +69,15 @@ class NeoPixelDisplay:
         self.show()
 
     def run_debug(self):
-        # TODO implement this as method on NeoPixelDisplay implementation
         delay = 0.05
         try:
             while True:
                 for i in range(self.led_count):
                     self.strip[i] = (255, 255, 255)
+                    self.show()
+                    time.sleep(delay)
+                for i in range(self.led_count):
+                    self.strip[i] = (0, 0, 0)
                     self.show()
                     time.sleep(delay)
                 for i in range(self.led_count):

@@ -152,8 +152,10 @@ def init(x_boxes: int, y_boxes: int, rotate_90: bool):
     display_resolution = (x_res, y_res)
 
     if Constants.use_neopixel:
+        logger.info("Setting up NeoPixel display")
         display = d.NeoPixelDisplay(led_count, x_boxes, y_boxes, rotate_90)
     else:
+        logger.info("Setting up PyGame Debug display")
         display = d.PyGameDisplay(x_res, y_res, 50)
 
     return display_resolution, display, led_count
@@ -203,6 +205,10 @@ def main(pill: threading.Event = threading.Event(), x_boxes: int = 5, y_boxes: i
             logger.exception('Background gifs setup failed. Check folders')
             time.sleep(2)
 
+def debug(x_boxes: int = 5, y_boxes: int = 3, rotate_90: bool = False):
+    display_resolution, display, _ = init(x_boxes, y_boxes, rotate_90)
+    display.run_debug()
+
 
 if __name__ == '__main__':
     logger.info('#####  blinky   ###########################')
@@ -220,7 +226,7 @@ if __name__ == '__main__':
     ARGS = PARSER.parse_args()
 
     if ARGS.debug:
-        print('No debug mode implemented atm')
+        debug(1,1)
     elif ARGS.rotate:
         main(rotate_90=True)
     else:
