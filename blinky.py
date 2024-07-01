@@ -23,7 +23,7 @@ TEXT = None
 SKIP = Path(f'{Constants.work_dir}/config_files/skip')
 
 @dataclasses.dataclass
-class data(kw=True):
+class data():
     reminder_time: time.monotonic = time.monotonic()
 
 def display_gif(display, filepath, display_resolution):
@@ -47,11 +47,11 @@ def display_gif(display, filepath, display_resolution):
                     new_rgb = tuple([x * 0.15 for x in old_rgb])
                     display.set_xy(x, y, new_rgb)
         if txt:
-            data.reminder_time = datetime.datetime.now()
+            data.reminder_time = time.monotonic()
             write_text(txt, display_resolution)
         elif time.monotonic() - data.reminder_time > Options.adtime:
             txt_q.put('Write me at t.me/flaschplayerbot')
-            write_text(txt, display_resolution)
+            write_text(get_text(), display_resolution)
         if display.is_running():
             display.show()
         else:

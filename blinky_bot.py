@@ -40,21 +40,21 @@ logger = logging.getLogger("blinky.bot")
 # context. Error handlers also receive the raised TelegramError object in error.
 def start(update, context):
     """Send a message when the command /start is issued."""
-    update.message.reply_text('Hi!')
+    update.effective_chat.send_message('Hi!')
 
 
 def help(update, context):
     """Send a message when the command /help is issued."""
-    update.message.reply_text('Help!')
+    update.effective_chat.send_message('Help!')
 
 
 def text_speed(update, context):
     """Send a message when the command /text_speed is issued."""
     if context.args and isinstance(int(context.args[0]), int):
         Options.text_speed = int(context.args[0])
-        update.message.reply_text(f"Text speed set to {context.args[0]}")
+        update.effective_chat.send_message(f"Text speed set to {context.args[0]}")
     else:
-        update.message.reply_text(f"Text speed can only be a round number. Default is 70 e.g. /text_speed 70")
+        update.effective_chat.send_message(f"Text speed can only be a round number. Default is 70 e.g. /text_speed 70")
 
 
 def brightness(update, context):
@@ -62,16 +62,17 @@ def brightness(update, context):
     if context.args:
         brightness = float(context.args[0]) / 100
         Options.brightness = brightness
-        update.message.reply_text(f"Brightness set to {context.args[0]} : {brightness}")
+        #update.effective_chat.send_message(f"Brightness set to {context.args[0]} : {brightness}")
+        update.effective_chat.send_message(f"Brightness set to {context.args[0]} : {brightness}")
     else:
-        update.message.reply_text(f"What percent of brightness do you want dear? E.g. /brightness 40")
+        update.effective_chat.send_message(f"What percent of brightness do you want dear? E.g. /brightness 40")
 
 
 def mood(update, context):
     """Send a message when the command /mood is issued."""
     Options.mood.set(context.args[0])
     Options.playlistmode.set("mood")
-    update.message.reply_text(f"Mood set {context.args[0]}")
+    update.effective_chat.send_message(f"Mood set {context.args[0]}")
 
 
 def play(update, context):
@@ -79,15 +80,15 @@ def play(update, context):
     if context.args:
         Options.pattern.set(context.args[0])
         Options.playlistmode.set("pattern")
-        update.message.reply_text(f"Playing anything matching {context.args[0]} — note that it may not match anything")
+        update.effective_chat.send_message(f"Playing anything matching {context.args[0]} — note that it may not match anything")
     else:
-        update.message.reply_text("You need to provide something to select GIFs from our catalogue")
+        update.effective_chat.send_message("You need to provide something to select GIFs from our catalogue")
 
 
 def text(update, context):
     """Writing text on top of what is playing if issued with the /text command"""
     if len(update.message.text) > 120:
-        update.message.reply_text("Sorry that's quite the text and I'm a little lazy. Can you make it shorter?")
+        update.effective_chat.send_message("Sorry that's quite the text and I'm a little lazy. Can you make it shorter?")
     else:
         txt.put(update.message.text)
 
@@ -99,8 +100,8 @@ def skip(update, context):
 def echo(update, context):
     """Echo the user message."""
     logger.info(f'Starting Echo Handler')
-    # update.message.reply_text(update.message.text)
-    update.message.reply_text("""Sorry this is not a gif or a picture and
+    # update.effective_chat.send_message(update.message.text)
+    update.effective_chat.send_message("""Sorry this is not a gif or a picture and
 I have no clue how to write text to that display thing there.
 I mean have you seen how that works? It's fucking nuts.
 I don't even know how to make letters that small and
@@ -110,7 +111,7 @@ to 20x15 pixel and show you? :D""")
 
 
 def voice_handler(update, context):
-    update.message.reply_text("""Sorry this is not a gif or a picture and
+    update.effective_chat.send_message("""Sorry this is not a gif or a picture and
 I have no clue how to write text to that display thing there.
 I mean have you seen how that works? It's fucking nuts.
 I don't even know how to make letters that small and
@@ -136,7 +137,7 @@ def gif_handler(update, context):
         logger.info(os.path.getsize(f'{Constants.work_dir}/media.mp4'))
         put_gifs(f'{Constants.work_dir}/media.mp4')
     else:
-        update.message.reply_text("""Wow! Sry that's way to big!
+        update.effective_chat.send_message("""Wow! Sry that's way to big!
                 I'm just a little pi and I can't handle that much traffic.
                 Please send me something smaller. :)""")
 
@@ -154,15 +155,15 @@ def put_gifs(telegram_file):
     try:
         ff = FFmpeg(
             inputs={telegram_file: '-y -hide_banner -loglevel error'},  # TODO Remove the -y ??/
-            outputs={out: '-s 20x15'})
+            outputs={out: '-s 25x12'})
         ff.run()
         try:
             with open(out) as f:
                 logger.info(f'Gif creation successful: {out}')
         except IOError:
-            logger.warning(f'Gif creation failed: {out}')
+            logger.exception(f'Gif creation failed: {out}')
     except Exception as e:
-        logger.warning('FFmpeg Error!')
+        logger.exception('FFmpeg Error!')
     try:
         q.mark_ready(out)
         GIF_COUNTER += 1
