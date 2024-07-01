@@ -1,6 +1,5 @@
 """Blinky: Main contributor to FlaschPlayer"""
 import dataclasses
-import datetime
 import glob
 import logging
 import os
