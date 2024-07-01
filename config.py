@@ -15,6 +15,7 @@ class Constants:
     use_neopixel: bool = 'NEOPIXEL' in os.environ
     waiting_line: Path = Path(work_dir + "/config_files/waiting_line")
     waiting_line_lock: Path = Path(work_dir + "/config_files/waiting_line.lock")
+    ad_link: str = os.environ['AD_LINK']
     saved_config: Path = Path(work_dir + '/config_files/dumped_config')
 
 

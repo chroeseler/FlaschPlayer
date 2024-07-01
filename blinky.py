@@ -50,7 +50,7 @@ def display_gif(display, filepath, display_resolution):
             data.reminder_time = time.monotonic()
             write_text(txt, display_resolution)
         elif time.monotonic() - data.reminder_time > Options.adtime:
-            txt_q.put('Write me at t.me/flaschplayerbot')
+            txt_q.put(f'Write me at t.me/{Constants.ad_link}')
             write_text(get_text(), display_resolution)
         if display.is_running():
             display.show()
