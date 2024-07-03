@@ -15,6 +15,7 @@ class Constants:
     waiting_line: Path = Path(work_dir + "/config_files/waiting_line")
     waiting_line_lock: Path = Path(work_dir + "/config_files/waiting_line.lock")
     ad_link: str = os.environ['AD_LINK']
+    root: int = int(os.environ['ROOT'])
     saved_config: Path = Path(work_dir + '/config_files/dumped_config')
 
 
@@ -27,6 +28,7 @@ class Options:
     pattern: str = 'default'
     led_type: Literal['rgb', 'grb'] = 'grb'
     adtime: int = 1200
+    allowed_ids: list[int, ...] = dataclasses.field(default_factory=lambda: [int(os.environ['ROOT'])])
     init: bool = False
 
     def __post_init__(self):
