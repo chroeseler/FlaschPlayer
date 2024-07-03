@@ -1,19 +1,4 @@
 #!/usr/bin/ python3
-# -*- coding: utf-8 -*-
-# This program is dedicated to the public domain under the CC0 license.
-
-"""
-Simple Bot to reply to Telegram messages.
-
-First, a few handler functions are defined. Then, those functions are passed to
-the Dispatcher and registered at their respective places.
-Then, the bot is started and runs until we press Ctrl-C on the command line.
-
-Usage:
-Basic Echobot example, repeats messages.
-Press Ctrl-C on the command line or send a signal to the process to stop the
-bot.
-"""
 import logging
 import os
 import sys
@@ -50,6 +35,8 @@ def help(update, context):
 
 def text_speed(update, context):
     """Send a message when the command /text_speed is issued."""
+    if not check_access(update):
+        return
     if context.args and isinstance(int(context.args[0]), int):
         Options.text_speed = int(context.args[0])
         update.effective_chat.send_message(f"Text speed set to {context.args[0]}")
@@ -59,6 +46,8 @@ def text_speed(update, context):
 
 def brightness(update, context):
     """Send a message when the command /brightness is issued."""
+    if not check_access(update):
+        return
     if context.args:
         brightness = float(context.args[0]) / 100
         Options.brightness = brightness
@@ -70,6 +59,8 @@ def brightness(update, context):
 
 def mood(update, context):
     """Send a message when the command /mood is issued."""
+    if not check_access(update):
+        return
     Options.mood.set(context.args[0])
     Options.playlistmode.set("mood")
     update.effective_chat.send_message(f"Mood set {context.args[0]}")
@@ -77,6 +68,8 @@ def mood(update, context):
 
 def play(update, context):
     """Send a message when the command /mood is issued."""
+    if not check_access(update):
+        return
     if context.args:
         Options.pattern.set(context.args[0])
         Options.playlistmode.set("pattern")
@@ -94,6 +87,8 @@ def text(update, context):
 
 
 def skip(update, context):
+    if not check_access(update):
+        return
     Path(f'{Constants.work_dir}/config/skip').touch()
 
 
@@ -125,8 +120,6 @@ def error(update, context):
     logger.warning('Update "%s" caused error "%s"', update, context.error)
     error = traceback.format_exc()
     logger.error(f"Error: {str(context.error)}\n{error}")
-
-
 
 
 def gif_handler(update, context):
@@ -168,8 +161,30 @@ def put_gifs(telegram_file):
         q.mark_ready(out)
         GIF_COUNTER += 1
     except Exception as e:
-        logger.error(traceback.format_exec())
+        logger.exception('Failure adding gif to queue')
 
+
+def access_handler(update, context):
+    logger.info(f'Starting Access Handler')
+    if not update.message['chat']['id'] == Constants.root:
+        update.effective_chat.send_message("Access denied!")
+    else:
+        update.effective_chat.send_message("Access granted.")
+        id = update.message['contact']['user_id']
+        first = update.message['contact']['first_name']
+        last = update.message['contact']['last_name']
+        if not id in Options.allowed_ids:
+            Options.allowed_ids.append(id)
+            update.effective_chat.send_message(f'Added User {first} {last} to access list')
+        else:
+            Options.allowed_ids.remove(id)
+            update.effective_chat.send_message(f'Removed User {first} {last} from access list')
+
+def check_access(update):
+    if not update.message['chat']['id'] in Options.allowed_ids:
+        update.effective_chat.send_message('Access denied!')
+        return False
+    return True
 
 def make_updater():
     token = os.environ['BOT_TOKEN']
@@ -191,6 +206,7 @@ def make_updater():
 
     dp.add_handler(MessageHandler(Filters.voice, voice_handler))
     dp.add_handler(MessageHandler(Filters.photo, image_handler))
+    dp.add_handler(MessageHandler(Filters.contact, access_handler))
     dp.add_handler(MessageHandler(Filters.document.mime_type("video/mp4"), gif_handler))
 
     # on command i.e. message - echo the message on Telegram
