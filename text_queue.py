@@ -19,22 +19,22 @@ def setup():
 
 
 def put(text: str):
-    def add_char_coord(char, width, text):
+    def add_char_coord(char, width, t_char):
         if ord(char) == 32:
-            return text, width + 3
+            return t_char, width + 3
         char_dict = get_coords(char)
         if char_dict:
             for coords in char_dict['dots']:
-                text.append([coords[0] + width, coords[1]])
+                t_char.append([coords[0] + width, coords[1]])
             width += char_dict['size'][0]
-        return text, width + 1
+        return t_char, width + 1
 
     logger.info('Adding "%s" to text queue', text)
     text_matrix = []
-    width = 0
+    text_width = 0
     for character in text:
-        text_matrix, width = add_char_coord(character, width, text_matrix)
-    if width > 0:
+        text_matrix, text_width = add_char_coord(character, text_width, text_matrix)
+    if text_width > 0:
         with lock:
             with open(queue_txt, 'a') as f:
                 json.dump(text_matrix, f)
@@ -50,12 +50,12 @@ def has_items():
 def pop():
     with lock:
         with open(queue_txt, 'r+') as f:  # open file in read / write mode
-            firstLine = f.readline()  # read the first line and throw it out
+            first_line = f.readline()  # read the first line and throw it out
             data = f.read()  # read the rest
             f.seek(0)  # set the cursor to the top of the file
             f.write(data)  # write the data back
             f.truncate()  # set the file size to the current size
-            return json.loads(firstLine)
+            return json.loads(first_line)
 
 
 def dotting(path: Path):

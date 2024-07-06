@@ -14,16 +14,18 @@ from PIL import Image, ImageSequence
 import display as d
 import text_queue as txt_q
 import thequeue as q
-from config import Constants, main_options as Options
+from config import Constants, Main_Options as Options
 
 logger = logging.getLogger("blinky.led")
 
 TEXT = None
 SKIP = Path(f'{Constants.work_dir}/config_files/skip')
 
+
 @dataclasses.dataclass
-class data():
+class Data:
     reminder_time: time.monotonic = time.monotonic()
+
 
 def display_gif(display, filepath, display_resolution):
     """Main action point
@@ -46,9 +48,9 @@ def display_gif(display, filepath, display_resolution):
                     new_rgb = tuple([x * 0.15 for x in old_rgb])
                     display.set_xy(x, y, new_rgb)
         if txt:
-            data.reminder_time = time.monotonic()
+            Data.reminder_time = time.monotonic()
             write_text(txt, display_resolution)
-        elif time.monotonic() - data.reminder_time > Options.adtime:
+        elif time.monotonic() - Data.reminder_time > Options.adtime:
             txt_q.put(f'Write me at t.me/{Constants.ad_link}')
             write_text(get_text(), display_resolution)
         if display.is_running():
@@ -60,9 +62,9 @@ def display_gif(display, filepath, display_resolution):
                 if frame.info['duration'] > 100:
                     time.sleep((frame.info['duration'] - 100) / 1000)
 
-    def write_text(text, display_resolution):
+    def write_text(text, screen_resolution):
         for coord in text:
-            if coord[0] < display_resolution[0]:
+            if coord[0] < screen_resolution[0]:
                 display.set_xy(coord[0], coord[1], (255, 255, 255))
 
     def get_text():
@@ -80,14 +82,14 @@ def display_gif(display, filepath, display_resolution):
                 TEXT = None
                 return None
 
-    def text_generator(text: str, display_resolution: list[int, int]):
+    def text_generator(text: str, screen_resolution: list[int, int]):
         """The generator gets a list with the dot coordinates of the text letters.
-        They all get moved on the x axis to the be outside on the of the display
+        They all get moved on the x-axis to the be outside on the of the display
         and then get moved back one x coordinate per yield. If an x coordinate reaches 0
         it gets removes from the list. The generator stops if the list is empty"""
         frame_counter = 0
         for dot in range(len(text)):
-            text[dot][0] += display_resolution[0]
+            text[dot][0] += screen_resolution[0]
         while text:
             frame_counter += 1
             if frame_counter % Options.text_speed != 0:
@@ -131,10 +133,10 @@ def display_gif(display, filepath, display_resolution):
                 if should_abort():
                     break
 
-    def draw_gif(filepath: Path):
+    def draw_gif(gif_path: Path):
         total_loop_duration = 500
-        logger.info('Playing: %s', filepath)
-        img = Image.open(filepath)
+        logger.info('Playing: %s', gif_path)
+        img = Image.open(gif_path)
         if 'duration' in img.info:
             # Adding the durations of every frame until at least 5 sec runtime
             loop_gif(img, total_loop_duration)
@@ -142,7 +144,7 @@ def display_gif(display, filepath, display_resolution):
             show_photo(img)
 
         if not is_background():
-            logger.info("Moving to graveyard: %s", filepath)
+            logger.info("Moving to graveyard: %s", gif_path)
             bury_in_graveyard()
 
     draw_gif(filepath)
@@ -213,6 +215,7 @@ def main(pill: threading.Event = threading.Event(), x_boxes: int = 5, y_boxes: i
             logger.exception('Background gifs setup failed. Check folders')
             time.sleep(2)
 
+
 def debug(x_boxes: int = 5, y_boxes: int = 3, rotate_90: bool = False):
     display_resolution, display, _ = init(x_boxes, y_boxes, rotate_90)
     display.run_debug()
@@ -234,9 +237,8 @@ if __name__ == '__main__':
     ARGS = PARSER.parse_args()
 
     if ARGS.debug:
-        debug(1,1)
+        debug(1, 1)
     elif ARGS.rotate:
         main(rotate_90=True)
     else:
         main()
-

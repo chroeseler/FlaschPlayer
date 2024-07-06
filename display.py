@@ -6,7 +6,7 @@ import board
 import numpy as np
 
 import layout
-from config import main_options as Options
+from config import Main_Options as Options
 
 logger = logging.getLogger("blinky.display")
 
@@ -134,8 +134,8 @@ class PyGameDisplay:
     def paint_random(self):
         color = tuple(np.random.choice(range(256), size=3))
         self.set_xy(np.random.choice(range(self.x_pixels)),
-            np.random.choice(range(self.y_pixels)),
-            color)
+                    np.random.choice(range(self.y_pixels)),
+                    color)
 
     def set_brightness(self):
         self.brightness = Options.brightness

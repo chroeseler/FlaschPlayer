@@ -12,7 +12,7 @@ from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
 
 import text_queue as txt
 import thequeue as q
-from config import Constants, main_options as Options
+from config import Constants, Main_Options as Options
 
 GIF_COUNTER = 0
 
