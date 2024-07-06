@@ -170,14 +170,14 @@ def access_handler(update, context):
         update.effective_chat.send_message("Access denied!")
     else:
         update.effective_chat.send_message("Access granted.")
-        id = update.message['contact']['user_id']
+        telegram_id = update.message['contact']['user_id']
         first = update.message['contact']['first_name']
         last = update.message['contact']['last_name']
-        if not id in Options.allowed_ids:
-            Options.allowed_ids.append(id)
+        if not telegram_id in Options.allowed_ids:
+            Options.add_id(telegram_id)
             update.effective_chat.send_message(f'Added User {first} {last} to access list')
         else:
-            Options.allowed_ids.remove(id)
+            Options.remove_id(telegram_id)
             update.effective_chat.send_message(f'Removed User {first} {last} from access list')
 
 def check_access(update):

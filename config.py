@@ -42,10 +42,21 @@ class Options:
     def __setattr__(self, key, value):
         if self.init:
             super().__setattr__(key, value)
-            with open(Constants.saved_config, 'w+') as save_file:
-                json.dump(self, fp=save_file, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+            self.__save_config()
         else:
             super().__setattr__(key, value)
+
+    def add_id(self, telegram_id):
+        self.allowed_ids.append(telegram_id)
+        self.__save_config()
+
+    def remove_id(self, telegram_id):
+        self.allowed_ids.remove(telegram_id)
+        self.__save_config()
+
+    def __save_config(self):
+        with open(Constants.saved_config, 'w+') as save_file:
+            json.dump(self, fp=save_file, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
 main_options = Options()
