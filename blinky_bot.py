@@ -15,7 +15,6 @@ Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
 import logging
-# import pushover as po
 
 import os
 from pathlib import Path
@@ -124,7 +123,6 @@ def error(update, context):
     logger.warning('Update "%s" caused error "%s"', update, context.error)
     err = traceback.format_exc()
     logger.error(f"Error: {str(context.error)}\n{err}")
-    # po.send(f"Error: {str(context.error)}\n{error}")
 
 
 def gif_handler(update, context):
@@ -161,7 +159,6 @@ def put_gifs(telegram_file):
 
     except FFRuntimeError:
         logger.exception('FFmpeg Error!')
-        # po.send(f"ffmpeg error\n{traceback.format_exec()}")
     try:
         q.mark_ready(out)
         GIF_COUNTER += 1
