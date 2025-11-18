@@ -1,0 +1,211 @@
+@startuml FlaschPlayer Architecture
+
+' Core Configuration
+class Config {
+  - display_resolution: tuple[int, int]
+  - brightness: float
+  - playlistmode: str
+  - mood: str
+  - pattern: str
+  - text_speed: int
+  - work_dir: str
+  - waiting_line: str
+  - use_neopixel: bool
+  + __init__()
+  + __setattr__(name, value)
+}
+
+note right of Config
+  Singleton instance: settings
+  Auto-persists to JSON file
+end note
+
+' Display Interface
+interface IDisplay {
+  + is_running(): bool
+  + show()
+  + set_brightness()
+  + set_xy(x, y, value)
+}
+
+' Display Implementations
+class NeoPixelDisplay {
+  - resolution: tuple[int, int]
+  - led_count: int
+  - strip: NeoPixel
+  - matrix: ndarray
+  - brightness: float
+  + __init__(led_count, x_boxes, y_boxes, rotate_90)
+  + is_running(): bool
+  + show()
+  + set_brightness()
+  + set_xy(x, y, value)
+  + flash()
+  + run_debug()
+}
+
+class PyGameDisplay {
+  - pg: module
+  - surface: Surface
+  - pixel_size: int
+  - x_pixels: int
+  - y_pixels: int
+  - running: bool
+  - brightness: float
+  + __init__(x_pixels, y_pixels, pixel_size)
+  + is_running(): bool
+  + show()
+  + process_events()
+  + set_brightness()
+  + set_xy(x, y, color)
+  + paint_random()
+}
+
+IDisplay <|.. NeoPixelDisplay
+IDisplay <|.. PyGameDisplay
+
+' Layout Module
+class Layout <<module>> {
+  + full_layout(x_boxes, y_boxes, fliplr, flipud, rotate_90): ndarray
+}
+
+' Queue Management
+class TheQueue <<module>> {
+  - queue_txt: str
+  - lock: FileLock
+  + setup()
+  + mark_ready(path)
+  + has_items(): bool
+  + take(): str
+}
+
+class TextQueue <<module>> {
+  - queue_txt: str
+  - lock: FileLock
+  - LETTERS: Path
+  + setup()
+  + put(text)
+  + has_items(): bool
+  + pop(): ndarray
+  - dotting(path): list
+  - get_coords(char): list
+}
+
+' Main Player
+class Blinky <<module>> {
+  - TEXT: generator
+  - SKIP: Path
+  + display_gif(display, filepath)
+  + files(path): generator
+  + init(x_boxes, y_boxes, rotate_90): IDisplay
+  + matches_pattern(filepath, pattern): bool
+  + main(x_boxes, y_boxes, rotate_90)
+}
+
+note right of Blinky
+  Main event loop:
+  1. Check queue for user GIFs
+  2. Play queued content
+  3. Show backgrounds based on mood
+  4. Overlay scrolling text
+end note
+
+' Telegram Bot
+class System {
+  - updater: Updater
+  + __init__()
+  + start()
+  + stop()
+}
+
+class BlinkyBot <<module>> {
+  - GIF_COUNTER: int
+  - stopped: bool
+  + start(update, context)
+  + help(update, context)
+  + text_speed(update, context)
+  + brightness(update, context)
+  + mood(update, context)
+  + play(update, context)
+  + text(update, context)
+  + skip(update, context)
+  + gif_handler(update, context)
+  + image_handler(update, context)
+  - put_gifs(telegram_file)
+  + make_updater(): Updater
+}
+
+System *-- BlinkyBot : contains handlers
+
+' Programmatic Player
+class ProgrammaticPlayer <<module>> {
+  + init_display(x_boxes, y_boxes, rotate_90): IDisplay
+  + run_program(display, program_module)
+  + main()
+}
+
+' Program Interface
+interface IProgram {
+  + render(display, width, height, frame)
+  + get_fps(): int
+}
+
+class PlasmaProgram {
+  + render(display, width, height, frame)
+  + get_fps(): int
+}
+
+class MandelbrotProgram {
+  + render(display, width, height, frame)
+}
+
+IProgram <|.. PlasmaProgram
+IProgram <|.. MandelbrotProgram
+
+' Relationships
+Blinky --> IDisplay : uses
+Blinky --> Config : reads
+Blinky --> TheQueue : dequeues
+Blinky --> TextQueue : overlays
+
+BlinkyBot --> Config : updates
+BlinkyBot --> TheQueue : enqueues
+BlinkyBot --> TextQueue : enqueues
+
+ProgrammaticPlayer --> IDisplay : uses
+ProgrammaticPlayer --> IProgram : loads & runs
+
+NeoPixelDisplay --> Layout : uses
+NeoPixelDisplay --> Config : reads brightness
+PyGameDisplay --> Config : reads brightness
+
+TheQueue ..> Config : uses work_dir
+TextQueue ..> Config : uses work_dir
+
+' External Dependencies
+package "External Libraries" {
+  class PIL <<external>>
+  class Telegram <<external>>
+  class FFmpeg <<external>>
+  class NeoPixel_HW <<external>>
+  class PyGame <<external>>
+}
+
+Blinky --> PIL : renders images
+BlinkyBot --> Telegram : bot interface
+BlinkyBot --> FFmpeg : resize media
+NeoPixelDisplay --> NeoPixel_HW : controls LEDs
+PyGameDisplay --> PyGame : simulates display
+
+' Data Flow Notes
+note bottom of TheQueue
+  File-based queue with FileLock
+  for thread-safe operations
+end note
+
+note bottom of TextQueue
+  Converts text to pixel coordinates
+  using letter image templates
+end note
+
+@enduml

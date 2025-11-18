@@ -1,0 +1,68 @@
+@startuml FlaschPlayer Component Diagram
+
+!include <C4/C4_Component>
+
+' External Systems
+Person(user, "User", "Sends GIFs, text,\ncommands via Telegram")
+
+System_Boundary(flaschplayer, "FlaschPlayer System") {
+
+    Component(telegram_bot, "Telegram Bot", "blinky_bot.py", "Receives user input,\nprocesses media,\nupdates config")
+
+    Component(main_player, "Main Player", "blinky.py", "Main event loop,\nGIF rendering,\ntext overlay")
+
+    Component(prog_player, "Programmatic Player", "programmatic_player.py", "Runs algorithmic\nanimations")
+
+    ComponentDb(config, "Configuration", "config.py", "Global settings,\npersisted to JSON")
+
+    ComponentDb(gif_queue, "GIF Queue", "thequeue.py", "File-based queue\nwith FileLock")
+
+    ComponentDb(text_queue, "Text Queue", "text_queue.py", "Text-to-pixels\nconversion & queue")
+
+    Component(display_abs, "Display Abstraction", "display.py", "NeoPixel or PyGame\nimplementation")
+
+    ComponentDb(layout, "Layout Mapper", "layout.py", "Maps (x,y) coords\nto LED indices")
+
+    Component(programs, "Animation Programs", "programs/*.py", "Plasma, Mandelbrot,\netc.")
+}
+
+System_Ext(led_hardware, "NeoPixel LED Matrix", "Physical 25x12\nLED display")
+
+System_Ext(pygame_window, "PyGame Window", "Development\nsimulator")
+
+System_Ext(filesystem, "File System", "GIFs, backgrounds,\nletter images")
+
+' User interactions
+Rel(user, telegram_bot, "Sends GIF/text/commands", "Telegram API")
+
+' Telegram Bot interactions
+Rel(telegram_bot, config, "Updates settings", "brightness, mood, etc.")
+Rel(telegram_bot, gif_queue, "Enqueues GIFs", "mark_ready()")
+Rel(telegram_bot, text_queue, "Enqueues text", "put()")
+Rel(telegram_bot, filesystem, "Saves resized media", "FFmpeg")
+
+' Main Player interactions
+Rel(main_player, display_abs, "Renders frames", "set_xy(), show()")
+Rel(main_player, gif_queue, "Dequeues GIFs", "take()")
+Rel(main_player, text_queue, "Gets text coords", "pop()")
+Rel(main_player, config, "Reads settings", "mood, pattern, speed")
+Rel(main_player, filesystem, "Loads GIFs/backgrounds", "PIL")
+
+' Programmatic Player interactions
+Rel(prog_player, display_abs, "Renders frames", "set_xy(), show()")
+Rel(prog_player, programs, "Loads & executes", "render()")
+Rel(prog_player, config, "Reads resolution", "display_resolution")
+
+' Display interactions
+Rel(display_abs, layout, "Uses mapping", "full_layout()")
+Rel(display_abs, config, "Reads brightness", "settings.brightness")
+Rel(display_abs, led_hardware, "Controls LEDs", "NeoPixel", "ARM only")
+Rel(display_abs, pygame_window, "Simulates display", "PyGame", "Dev mode")
+
+' Queues and filesystem
+Rel(gif_queue, filesystem, "Reads queue file", "FileLock")
+Rel(text_queue, filesystem, "Reads letter images", "PIL")
+
+SHOW_LEGEND()
+
+@enduml
