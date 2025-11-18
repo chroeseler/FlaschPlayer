@@ -2,40 +2,42 @@
 
 == One Time Setup
 
-[source,sh]
-....
-python3 -m venv env
-....
+This project uses https://docs.astral.sh/uv/[uv] for dependency management.
 
-To activate the env:
+First, install uv:
 
 [source,sh]
 ....
-#fish
-. env/bin/activate.fish
-#bash
-source env/bin/activate
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Or via Homebrew
+brew install uv
 ....
 
-To install required packages:
+Then sync dependencies:
 
 [source,sh]
 ....
-pip install -r requirements.txt
+uv sync
 ....
 
-*Some packages for neopixel/raspberry pi stuff are missing*
+That's it! uv will automatically create a virtual environment and install all dependencies from `pyproject.toml`.
 
 == Managing Dependencies
 
-Install, save and commit dependencies:
+Add new dependencies:
 
 [source,sh]
 ....
-pip install some-package
-pip freeze > requirements.txt
-git add requirements.txt
-git commit -m 'update dependencies'
+# Add a package
+uv add some-package
+
+# Add a dev dependency
+uv add --dev some-dev-package
+
+# Update all dependencies
+uv sync --upgrade
 ....
 
 == Environment Setup
@@ -52,17 +54,65 @@ echo 'export WAIT_DIR=/some/directory' >> .envrc
 
 [source,sh]
 ....
-honcho start
+uv run honcho start
+....
+
+== Programmatic Display Player
+
+The `programmatic_player.py` script runs mathematical and procedural animations on the LED display.
+
+=== Quick Start
+
+Run with automatic program discovery and arrow key cycling:
+
+[source,sh]
+....
+uv run programmatic_player.py
+....
+
+Use **LEFT/RIGHT** or **UP/DOWN** arrow keys to cycle through programs.
+
+=== Available Programs
+
+- `aurora` - Northern lights simulation with flowing waves
+- `clock` - 4 different clock visualizations (cycles every 20 seconds)
+- `flow_field` - Particles flowing along Perlin noise field
+- `kaleidoscope` - Symmetrical patterns with rotation
+- `lissajous` - Beautiful parametric curves
+- `mandelbrot` - Zooming Mandelbrot fractal
+- `plasma` - Classic plasma effect
+- `starfield` - Flying through space
+
+=== Usage Examples
+
+[source,sh]
+....
+# Start with a specific program
+uv run programmatic_player.py programs.starfield
+
+# Custom display size (10x5 boxes)
+uv run programmatic_player.py -x 10 -y 5
+
+# Rotate display 90 degrees
+uv run programmatic_player.py programs.plasma --rotate
+
+# See all options
+uv run programmatic_player.py --help
 ....
 
 == Development Display
 
-There are different display implementations in `display.py`. They all implment the same API:
+There are different display implementations in `display.py`. They all implement the same API:
 
 - `set_xy(x, y, (r, g, b))` will set the RGB value for a given pixel
 - `show()` will flush the values to the display
 
-The `PyGameDisplay` implementation can also be test-drive with `python3 display_test.py`
+The `PyGameDisplay` implementation can also be test-driven with:
+
+[source,sh]
+....
+uv run python3 display_test.py
+....
 
 == Telegram
 

@@ -2,7 +2,6 @@ import os
 import logging
 import time
 import numpy as np
-import board
 import layout
 from config import settings
 
@@ -16,6 +15,7 @@ class NeoPixelDisplay:
     def __init__(self, led_count: int, x_boxes: int, y_boxes: int, rotate_90: bool):
 
         if os.uname()[4][:3] == "arm":
+            board = __import__("board")
             self.strip = __import__("neopixel").NeoPixel(board.D18, led_count, brightness=1, auto_write=False)
         else:
             self.strip = [None] * led_count
@@ -31,6 +31,7 @@ class NeoPixelDisplay:
         if os.uname()[4][:3] != "arm":
             logger.error("Not an ARM thing!")
         self.strip.show()
+        return None  # No keyboard events on NeoPixel display
 
     def set_brightness(self):
         self.brightness = settings.brightness
@@ -110,20 +111,30 @@ class PyGameDisplay:
         return self.running
 
     def process_events(self):
+        """Process pygame events and return any special commands."""
         pg = self.pg
+        command = None
         for event in pg.event.get():
             logger.debug(event)
             if event.type == pg.QUIT:
                 logger.info("Exiting PyGameDisplay")
                 self.running = False
                 pg.quit()
+            elif event.type == pg.KEYDOWN:
+                # Handle arrow keys for program switching
+                if event.key == pg.K_RIGHT or event.key == pg.K_DOWN:
+                    command = 'next_program'
+                elif event.key == pg.K_LEFT or event.key == pg.K_UP:
+                    command = 'prev_program'
+        return command
 
     def show(self):
         pg = self.pg
         screen = pg.display.get_surface()
         screen.blit(self.surface, (0, 0))
         pg.display.flip()
-        self.process_events()
+        command = self.process_events()
+        return command
 
     def paint_random(self):
         color = tuple(np.random.choice(range(256), size=3))

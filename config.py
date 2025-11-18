@@ -15,7 +15,7 @@ class Config:
     pattern: str = 'default'
     text_speed: int = 70
 
-    work_dir = os.environ['WORK_DIR']
+    work_dir = os.environ.get('WORK_DIR', os.getcwd())
     waiting_line = work_dir + '/config/waiting_line'
     waiting_line_lock = work_dir + '/config/waiting_line.lock'
     config_file = f'{work_dir}/config/settings'
