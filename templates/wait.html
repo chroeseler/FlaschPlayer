@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>Text Input Field Example</title>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <script src="https://cdn.tailwindcss.com"></script>
+      <script type="text/javascript">
+         var i = 0;
+         var txt = 'Aye! Nice, let me just quickly write that down: "{{ text }}"';
+         var speed = 30;
+         
+         function typeWriter() {
+           if (i < txt.length) {
+             document.getElementById("demo").innerHTML += txt.charAt(i);
+             i++;
+             setTimeout(typeWriter, speed);
+           }
+         }
+         setTimeout(typeWriter, speed);
+         setTimeout(function(){
+         window.location.href = "/";
+         }, {{ length * 1000}});
+      </script>
+      <style>
+         .vertical-center {
+         margin: 0;
+         position: absolute;
+         top: 50%;
+         -ms-transform: translateY(-50%);
+         transform: translateY(-50%);
+         }
+      </style>
+   </head>
+   <body class="bg-gray-900 flex h-screen">
+      <script></script>
+      <div class="vertical-center">
+         <p id="demo" style="color:white;font-size:10vw"></p>
+      </div>
+      <img src="https://wildthings.family/img/wt-sun.svg" class="invert fixed text-gray-500 opacity-30">
+   </body>
+</html>

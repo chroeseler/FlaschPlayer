@@ -1,39 +1,62 @@
-import os
-import logging
+import dataclasses
 import json
-from dataclasses import dataclass, asdict
+import logging
+import os
+from pathlib import Path
+from typing import Literal
 
 logger = logging.getLogger('blinky.config')
 
 
-@dataclass
-class Config:
-    display_resolution: tuple[int, int] = (25, 12)
-    brightness: float = 1.0
+@dataclasses.dataclass(kw_only=True, frozen=True)
+class Constants:
+    work_dir: os.environ = os.environ['WORK_DIR']
+    use_neopixel: bool = 'NEOPIXEL' in os.environ
+    waiting_line: Path = Path(work_dir + "/config_files/waiting_line")
+    waiting_line_lock: Path = Path(work_dir + "/config_files/waiting_line.lock")
+    ad_link: str = os.environ['AD_LINK']
+    root: int = int(os.environ['ROOT'])
+    saved_config: Path = Path(work_dir + '/config_files/dumped_config')
+
+
+@dataclasses.dataclass(kw_only=True)
+class Options:
+    brightness: float = 1
+    text_speed: int = 70
     playlistmode: str = 'mood'
     mood: str = 'default'
     pattern: str = 'default'
-    text_speed: int = 70
+    led_type: Literal['rgb', 'grb'] = 'grb'
+    adtime: int = 1200
+    allowed_ids: list[int, ...] = dataclasses.field(default_factory=lambda: [int(os.environ['ROOT'])])
+    init: bool = False
 
-    work_dir = os.environ.get('WORK_DIR', os.getcwd())
-    waiting_line = work_dir + '/config/waiting_line'
-    waiting_line_lock = work_dir + '/config/waiting_line.lock'
-    config_file = f'{work_dir}/config/settings'
+    def __post_init__(self):
+        if os.path.exists(Constants.saved_config):
+            with open(Constants.saved_config, 'r') as save_file:
+                old_config = json.load(fp=save_file)
+            for key, value in old_config.items():
+                setattr(self, key, value)
+        self.init = True
 
-    use_neopixel = 'NEOPIXEL' in os.environ
+    def __setattr__(self, key, value):
+        if self.init:
+            super().__setattr__(key, value)
+            self.__save_config()
+        else:
+            super().__setattr__(key, value)
 
-    def __init__(self):
-        if os.path.exists(self.config_file):
-            logger.info('Old config file found; loading')
-            with open(self.config_file, 'r', encoding='utf-8') as settings_file:
-                old_settings = json.load(settings_file)
-                for key, value in old_settings.items():
-                    setattr(self, key, value)
+    def add_id(self, telegram_id):
+        self.allowed_ids.append(telegram_id)
+        self.__save_config()
 
-    def __setattr__(self, name, value):
-        super()
-        with open(self.config_file, 'w', encoding='utf-8') as settings_file:
-            json.dump(asdict(self), settings_file)
+    def remove_id(self, telegram_id):
+        self.allowed_ids.remove(telegram_id)
+        self.__save_config()
+
+    def __save_config(self):
+        with open(Constants.saved_config, 'w+') as save_file:
+            json.dump(self, fp=save_file, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
-settings = Config()
+Main_Options = Options()

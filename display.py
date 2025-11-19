@@ -1,9 +1,12 @@
-import os
 import logging
+import os
 import time
+
+import board
 import numpy as np
+
 import layout
-from config import settings
+from config import Main_Options as Options
 
 logger = logging.getLogger("blinky.display")
 
@@ -14,29 +17,30 @@ class NeoPixelDisplay:
 
     def __init__(self, led_count: int, x_boxes: int, y_boxes: int, rotate_90: bool):
 
-        if os.uname()[4][:3] == "arm":
-            board = __import__("board")
+        if os.uname()[4][:3] == "arm" or os.uname()[4] == 'aarch64':
             self.strip = __import__("neopixel").NeoPixel(board.D18, led_count, brightness=1, auto_write=False)
         else:
             self.strip = [None] * led_count
         self.matrix = layout.full_layout(x_boxes, y_boxes, rotate_90=rotate_90)
         self.resolution = {x_boxes * 5, y_boxes * 4} if not rotate_90 else {x_boxes * 4, y_boxes * 5}
-        self.brightness = settings.brightness
         self.led_count = led_count
+        self.brightness = Options.brightness
+        self.led_type = Options.led_type
 
-    def is_running(self):
+    @staticmethod
+    def is_running():
         return True
 
     def show(self):
-        if os.uname()[4][:3] != "arm":
+        if os.uname()[4][:3] != "arm" and os.uname()[4] != 'aarch64':
             logger.error("Not an ARM thing!")
         self.strip.show()
         return None  # No keyboard events on NeoPixel display
 
     def set_brightness(self):
-        self.brightness = settings.brightness
+        self.brightness = Options.brightness
 
-    def set_xy(self, x, y, value):
+    def set_xy(self, x: int, y: int, value: list[int, int, int]):
         led_id = self.matrix[y][x]
         logger.debug('set_xy x: %s, y: %s, val: %s, id: %s', x, y, value, led_id)
         dark = True
@@ -45,6 +49,9 @@ class NeoPixelDisplay:
                 dark = False
         if dark:
             value = (0, 0, 0)
+
+        if self.led_type == 'grb':
+            value = [value[1], value[0], value[2]]
 
         self.strip[led_id] = tuple(self.brightness * x for x in value)
 
@@ -66,12 +73,15 @@ class NeoPixelDisplay:
         self.show()
 
     def run_debug(self):
-        # TODO implement this as method on NeoPixelDisplay implementation
         delay = 0.05
         try:
             while True:
                 for i in range(self.led_count):
                     self.strip[i] = (255, 255, 255)
+                    self.show()
+                    time.sleep(delay)
+                for i in range(self.led_count):
+                    self.strip[i] = (0, 0, 0)
                     self.show()
                     time.sleep(delay)
                 for i in range(self.led_count):
@@ -105,7 +115,7 @@ class PyGameDisplay:
         self.x_pixels = x_pixels
         self.y_pixels = y_pixels
         self.running = True
-        self.brightness = settings.brightness
+        self.brightness = Options.brightness
 
     def is_running(self):
         return self.running
@@ -143,7 +153,7 @@ class PyGameDisplay:
                     color)
 
     def set_brightness(self):
-        self.brightness = settings.brightness
+        self.brightness = Options.brightness
 
     def set_xy(self, x, y, color):
         x_offset = x * self.pixel_size

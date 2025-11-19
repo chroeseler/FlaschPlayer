@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>Text Input Field Example</title>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <script src="https://cdn.tailwindcss.com"></script>
+      <style>
+         img{
+         position: relative;
+         z-index: -1;
+         }
+      </style>
+   </head>
+   <body class="bg-gray-900 flex h-screen">
+      <form action="/" method="post" class="w-64 m-auto">
+         <label class="block mb-2 font-medium text-slate-200" for="input-field">Enter text:</label>
+         <input type="text" id="text" name="text" class="bg-gray-50 bg-gray-700/50 border-sky-600 text-gray-900 text-slate-100 text-sm rounded focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 max-w-lg">
+         <br>
+         <button type="submit" class="py-2 px-4 rounded-md h-11 text-sm font-medium transition-colors text-white bg-fuchsia-600 hover:bg-fuchsia-700 border border-fuchsia-500 border-2">Submit</button>
+      </form>
+      <img src="https://wildthings.family/img/wt-sun.svg" class="invert fixed text-gray-500 opacity-30">
+   </body>
+</html>
