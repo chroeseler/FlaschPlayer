@@ -10,6 +10,7 @@ from collections.abc import Generator, Iterator
 from pathlib import Path
 from typing import cast
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from PIL import Image, ImageSequence
 
 import display as d
@@ -34,7 +35,20 @@ class GifPlayer:
         self._display = display
         self._resolution = display_resolution
         self._text_gen: Iterator | None = None
-        self._reminder_time: float = time.monotonic()
+        self._scheduler = BackgroundScheduler()
+        self._scheduler.add_job(
+            self._enqueue_ad,
+            trigger='interval',
+            seconds=Options.adtime,
+            id='ad',
+        )
+        self._scheduler.start()
+
+    def _enqueue_ad(self) -> None:
+        txt_q.put(f'Write me at t.me/{Constants.ad_link}')
+
+    def stop(self) -> None:
+        self._scheduler.shutdown(wait=False)
 
     # ------------------------------------------------------------------
     # Public API
@@ -60,11 +74,7 @@ class GifPlayer:
                     new_rgb = tuple(ch * 0.15 for ch in pixel)
                     self._display.set_xy(x, y, new_rgb)
         if txt:
-            self._reminder_time = time.monotonic()
             self._write_text(txt)
-        elif time.monotonic() - self._reminder_time > Options.adtime:
-            txt_q.put(f'Write me at t.me/{Constants.ad_link}')
-            self._write_text(self._get_text())
         if self._display.is_running():
             self._display.show()
         else:
@@ -202,7 +212,19 @@ def main(pill: threading.Event = threading.Event(), x_boxes: int = 5, y_boxes: i
     os.makedirs(f"{Constants.work_dir}/gifs", exist_ok=True)
 
     player = GifPlayer(display, display_resolution)
+    try:
+        _run_loop(player, display, display_resolution, pill, res_str)
+    finally:
+        player.stop()
 
+
+def _run_loop(
+    player: GifPlayer,
+    display: Display,
+    display_resolution: tuple[int, int],
+    pill: threading.Event,
+    res_str: str,
+) -> None:
     while display.is_running() and not pill.is_set():
         if not (next_gif := q.take()):
             mood = Options.mood

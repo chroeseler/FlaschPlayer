@@ -10,6 +10,7 @@ dependencies = [
     "adafruit-circuitpython-typing>=1.9.4",
     "Adafruit-PlatformDetect>=3.84.0",
     "Adafruit-PureIO>=1.1.11",
+    "APScheduler>=3.10",
     "ffmpy>=0.3.0",
     "filelock>=3.12.2",
     "honcho>=1.1.0",
