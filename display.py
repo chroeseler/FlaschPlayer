@@ -9,6 +9,9 @@ from config import Main_Options as Options
 
 logger = logging.getLogger("blinky.display")
 
+_MACHINE = os.uname().machine
+IS_ARM: bool = _MACHINE.startswith("arm") or _MACHINE == "aarch64"
+
 
 class NeoPixelDisplay:
     resolution: tuple[int, int]
@@ -16,7 +19,7 @@ class NeoPixelDisplay:
 
     def __init__(self, led_count: int, x_boxes: int, y_boxes: int, rotate_90: bool):
 
-        if os.uname()[4][:3] == "arm" or os.uname()[4] == 'aarch64':
+        if IS_ARM:
             self.strip = __import__("neopixel").NeoPixel(board.D18, led_count, brightness=1, auto_write=False)
         else:
             self.strip = [None] * led_count
@@ -31,7 +34,7 @@ class NeoPixelDisplay:
         return True
 
     def show(self):
-        if os.uname()[4][:3] != "arm" and os.uname()[4] != 'aarch64':
+        if not IS_ARM:
             logger.error("Not an ARM thing!")
             return None
         self.strip.show()
