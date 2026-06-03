@@ -39,22 +39,17 @@ class Options:
     led_type: Literal['rgb', 'grb'] = 'grb'
     adtime: int = 1200
     allowed_ids: list[int, ...] = dataclasses.field(default_factory=lambda: [int(os.environ.get('ROOT', '0'))])
-    init: bool = False
 
     def __post_init__(self):
         if os.path.exists(Constants.saved_config):
             with open(Constants.saved_config, 'r') as save_file:
                 old_config = json.load(fp=save_file)
             for key, value in old_config.items():
-                setattr(self, key, value)
-        self.init = True
+                object.__setattr__(self, key, value)
 
     def __setattr__(self, key, value):
-        if self.init:
-            super().__setattr__(key, value)
-            self.__save_config()
-        else:
-            super().__setattr__(key, value)
+        super().__setattr__(key, value)
+        self.__save_config()
 
     def add_id(self, telegram_id):
         self.allowed_ids.append(telegram_id)
