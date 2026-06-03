@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+from abc import ABC, abstractmethod
 
 import board
 
@@ -13,7 +14,23 @@ _MACHINE = os.uname().machine
 IS_ARM: bool = _MACHINE.startswith("arm") or _MACHINE == "aarch64"
 
 
-class NeoPixelDisplay:
+class Display(ABC):
+    """Common interface shared by NeoPixelDisplay and PyGameDisplay."""
+
+    @abstractmethod
+    def set_xy(self, x: int, y: int, color: tuple) -> None: ...
+
+    @abstractmethod
+    def show(self) -> str | None: ...
+
+    @abstractmethod
+    def is_running(self) -> bool: ...
+
+    @abstractmethod
+    def set_brightness(self) -> None: ...
+
+
+class NeoPixelDisplay(Display):
     resolution: tuple[int, int]
     led_count: int
 
@@ -29,8 +46,7 @@ class NeoPixelDisplay:
         self.brightness = Options.brightness
         self.led_type = Options.led_type
 
-    @staticmethod
-    def is_running():
+    def is_running(self) -> bool:
         return True
 
     def show(self):
@@ -103,7 +119,7 @@ class NeoPixelDisplay:
             self.flash()
 
 
-class PyGameDisplay:
+class PyGameDisplay(Display):
 
     def __init__(self, x_pixels, y_pixels, pixel_size):
         self.pg = __import__("pygame")
