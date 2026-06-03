@@ -266,30 +266,31 @@ updated automatically when changed via bot commands. They are not env vars.
 
 ## Running the System
 
-### Quick start (full stack)
-
-With a `Procfile` in the project root pointing to entry_point.py:
-
-```bash
-uv run honcho start
-```
-
-Or launch directly:
+### Start everything
 
 ```bash
 uv run python3 entry_point.py
 ```
 
-This starts three processes:
+`entry_point.py` is the single entry point for the full system. It launches:
 
-1. **blinky** — display loop (thread)
-2. **blinky_bot** — Telegram bot (thread)
-3. **blinky_interface** — Flask web UI on port 5000 (process)
+| Component | Type | Description |
+|-----------|------|-------------|
+| `blinky.py` | Thread | Display loop — plays GIFs, scrolls text, drives LEDs |
+| `blinky_bot.py` | Thread | Telegram bot — receives commands and media |
+| `blinky_interface.py` | Process | Flask web UI on port 5000 |
 
-### Individual components
+`blinky_interface` runs as a separate OS process because Flask's development
+server is not thread-safe. The other two components share memory as threads,
+which is why `thequeue` and `text_queue` use file-based IPC to communicate
+across the process boundary.
+
+Press **Ctrl-C** or send **SIGTERM** to stop everything cleanly.
+
+### Individual components (debug / development)
 
 ```bash
-# Display loop only (requires WORK_DIR, will look for backgrounds)
+# Display loop only (requires WORK_DIR and background GIFs)
 uv run python3 blinky.py
 
 # Telegram bot only
@@ -297,16 +298,6 @@ uv run python3 blinky_bot.py
 
 # Web interface only
 uv run python3 blinky_interface.py
-```
-
-### Procfile (for honcho)
-
-Create `Procfile` in the project root if it doesn't exist:
-
-```
-blinky: uv run python3 blinky.py
-bot: uv run python3 blinky_bot.py
-web: uv run python3 blinky_interface.py
 ```
 
 ---

@@ -54,7 +54,7 @@ echo 'export WAIT_DIR=/some/directory' >> .envrc
 
 [source,sh]
 ....
-uv run honcho start
+uv run python3 entry_point.py
 ....
 
 == Programmatic Display Player
