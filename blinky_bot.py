@@ -8,7 +8,7 @@ from pathlib import Path
 from signal import SIGINT, signal
 
 from ffmpy import FFmpeg
-from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 
 import text_queue as txt
 import thequeue as q
@@ -21,83 +21,69 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger("blinky.bot")
 
 
-# Define a few command handlers. These usually take the two arguments update and
-# context. Error handlers also receive the raised TelegramError object in error.
-def start(update, context):
-    """Send a message when the command /start is issued."""
-    update.effective_chat.send_message('Hi!')
+async def start(update, context):
+    await update.effective_chat.send_message('Hi!')
 
 
-def help(update, context):
-    """Send a message when the command /help is issued."""
-    update.effective_chat.send_message('Help!')
+async def help(update, context):
+    await update.effective_chat.send_message('Help!')
 
 
-def text_speed(update, context):
-    """Send a message when the command /text_speed is issued."""
-    if not check_access(update):
+async def text_speed(update, context):
+    if not await check_access(update):
         return
     if context.args and isinstance(int(context.args[0]), int):
         Options.text_speed = int(context.args[0])
-        update.effective_chat.send_message(f"Text speed set to {context.args[0]}")
+        await update.effective_chat.send_message(f"Text speed set to {context.args[0]}")
     else:
-        update.effective_chat.send_message(f"Text speed can only be a round number. Default is 70 e.g. /text_speed 70")
+        await update.effective_chat.send_message(f"Text speed can only be a round number. Default is 70 e.g. /text_speed 70")
 
 
-
-def brightness(update, context):
-    """Send a message when the command /brightness is issued."""
-    if not check_access(update):
+async def brightness(update, context):
+    if not await check_access(update):
         return
     if context.args:
-        brightness = float(context.args[0]) / 100
-        Options.brightness = brightness
-        update.effective_chat.send_message(f"Brightness set to {context.args[0]} : {brightness}")
+        b = float(context.args[0]) / 100
+        Options.brightness = b
+        await update.effective_chat.send_message(f"Brightness set to {context.args[0]} : {b}")
     else:
-        update.effective_chat.send_message(f"What percent of brightness do you want dear? E.g. /brightness 40")
+        await update.effective_chat.send_message(f"What percent of brightness do you want dear? E.g. /brightness 40")
 
 
-
-def mood(update, context):
-    """Send a message when the command /mood is issued."""
-    if not check_access(update):
+async def mood(update, context):
+    if not await check_access(update):
         return
     Options.mood = context.args[0]
     Options.playlistmode = "mood"
-    update.effective_chat.send_message(f"Mood set {context.args[0]}")
+    await update.effective_chat.send_message(f"Mood set {context.args[0]}")
 
 
-def play(update, context):
-    """Send a message when the command /mood is issued."""
-    if not check_access(update):
+async def play(update, context):
+    if not await check_access(update):
         return
     if context.args:
         Options.pattern = context.args[0]
         Options.playlistmode = "pattern"
-        update.effective_chat.send_message(f"Playing anything matching {context.args[0]} — note that it may not match anything")
+        await update.effective_chat.send_message(f"Playing anything matching {context.args[0]} — note that it may not match anything")
     else:
-        update.effective_chat.send_message("You need to provide something to select GIFs from our catalogue")
+        await update.effective_chat.send_message("You need to provide something to select GIFs from our catalogue")
 
 
-
-def text(update, context):
-    """Writing text on top of what is playing if issued with the /text command"""
+async def text(update, context):
     if len(update.message.text) > 120:
-        update.effective_chat.send_message("Sorry that's quite the text and I'm a little lazy. Can you make it shorter?")
+        await update.effective_chat.send_message("Sorry that's quite the text and I'm a little lazy. Can you make it shorter?")
     else:
         txt.put(update.message.text)
 
 
-def skip(update, context):
-    if not check_access(update):
+async def skip(update, context):
+    if not await check_access(update):
         return
     Path(f'{Constants.work_dir}/config_files/skip').touch()
 
 
-def echo(update, context):
-    """Echo the user message."""
-    logger.info(f'Starting Echo Handler')
-    update.effective_chat.send_message("""Sorry this is not a gif or a picture and
+async def voice_handler(update, context):
+    await update.effective_chat.send_message("""Sorry this is not a gif or a picture and
 I have no clue how to write text to that display thing there.
 I mean have you seen how that works? It's fucking nuts.
 I don't even know how to make letters that small and
@@ -106,40 +92,29 @@ Anyways, wanna give me a gif or a picture so I can resize it
 to 20x15 pixel and show you? :D""")
 
 
-def voice_handler(update, context):
-    update.effective_chat.send_message("""Sorry this is not a gif or a picture and
-I have no clue how to write text to that display thing there.
-I mean have you seen how that works? It's fucking nuts.
-I don't even know how to make letters that small and
-I'm just an everyday bot. \n\n
-Anyways, wanna give me a gif or a picture so I can resize it
-to 20x15 pixel and show you? :D""")
-
-
-def error(update, context):
-    """Log Errors caused by Updates."""
+async def error(update, context):
     logger.warning('Update "%s" caused error "%s"', update, context.error)
-    error = traceback.format_exc()
-    logger.error(f"Error: {str(context.error)}\n{error}")
+    err = traceback.format_exc()
+    logger.error(f"Error: {str(context.error)}\n{err}")
 
 
-def gif_handler(update, context):
+async def gif_handler(update, context):
     logger.info(f'Starting Gif Handler')
     if update.message.document.file_size < 20000000:
-        mp4 = context.bot.getFile(update.message.document.file_id)
-        mp4.download(f'{Constants.work_dir}/media.mp4')
+        mp4 = await context.bot.get_file(update.message.document.file_id)
+        await mp4.download_to_drive(f'{Constants.work_dir}/media.mp4')
         logger.info(os.path.getsize(f'{Constants.work_dir}/media.mp4'))
         put_gifs(f'{Constants.work_dir}/media.mp4')
     else:
-        update.effective_chat.send_message("""Wow! Sry that's way to big!
+        await update.effective_chat.send_message("""Wow! Sry that's way to big!
                 I'm just a little pi and I can't handle that much traffic.
                 Please send me something smaller. :)""")
 
 
-def image_handler(update, context):
+async def image_handler(update, context):
     logger.info(f'Starting Image Handler')
-    pic = context.bot.getFile(update.message.photo[-1].file_id)
-    pic.download(f'{Constants.work_dir}/photo.gif')
+    pic = await context.bot.get_file(update.message.photo[-1].file_id)
+    await pic.download_to_drive(f'{Constants.work_dir}/photo.gif')
     put_gifs(f'{Constants.work_dir}/photo.gif')
 
 
@@ -148,7 +123,7 @@ def put_gifs(telegram_file):
     out = f'{Constants.work_dir}/gifs/{GIF_COUNTER:06d}.gif'
     try:
         ff = FFmpeg(
-            inputs={telegram_file: '-y -hide_banner -loglevel error'},  # TODO Remove the -y ??/
+            inputs={telegram_file: '-y -hide_banner -loglevel error'},
             outputs={out: '-s 25x12'})
         ff.run()
         try:
@@ -165,58 +140,53 @@ def put_gifs(telegram_file):
         logger.exception('Failure adding gif to queue')
 
 
-def access_handler(update, context):
+async def access_handler(update, context):
     logger.info(f'Starting Access Handler')
-    if not update.message['chat']['id'] == Constants.root:
-        update.effective_chat.send_message("Access denied!")
+    if update.message.chat.id != Constants.root:
+        await update.effective_chat.send_message("Access denied!")
     else:
-        update.effective_chat.send_message("Access granted.")
-        telegram_id = update.message['contact']['user_id']
-        first = update.message['contact']['first_name']
-        last = update.message['contact']['last_name']
-        if not telegram_id in Options.allowed_ids:
+        await update.effective_chat.send_message("Access granted.")
+        telegram_id = update.message.contact.user_id
+        first = update.message.contact.first_name
+        last = update.message.contact.last_name
+        if telegram_id not in Options.allowed_ids:
             Options.add_id(telegram_id)
-            update.effective_chat.send_message(f'Added User {first} {last} to access list')
+            await update.effective_chat.send_message(f'Added User {first} {last} to access list')
         else:
             Options.remove_id(telegram_id)
-            update.effective_chat.send_message(f'Removed User {first} {last} from access list')
+            await update.effective_chat.send_message(f'Removed User {first} {last} from access list')
 
-def check_access(update):
-    if not update.message['chat']['id'] in Options.allowed_ids:
-        update.effective_chat.send_message('Access denied!')
+
+async def check_access(update) -> bool:
+    if update.message.chat.id not in Options.allowed_ids:
+        await update.effective_chat.send_message('Access denied!')
         return False
     return True
 
-def make_updater():
+
+def make_application():
     token = os.environ['BOT_TOKEN']
     logger.info(f'Token: {token}')
 
-    updater = Updater(token, use_context=True)
+    app = ApplicationBuilder().token(token).build()
 
-    # Get the dispatcher to register handlers
-    dp = updater.dispatcher
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help))
+    app.add_handler(CommandHandler("brightness", brightness))
+    app.add_handler(CommandHandler("text_speed", text_speed))
+    app.add_handler(CommandHandler("mood", mood))
+    app.add_handler(CommandHandler("play", play))
+    app.add_handler(CommandHandler("skip", skip))
 
-    # on different commands - answer in Telegram
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("help", help))
-    dp.add_handler(CommandHandler("brightness", brightness))
-    dp.add_handler(CommandHandler("text_speed", text_speed))
-    dp.add_handler(CommandHandler("mood", mood))
-    dp.add_handler(CommandHandler("play", play))
-    dp.add_handler(CommandHandler("skip", skip))
+    app.add_handler(MessageHandler(filters.VOICE, voice_handler))
+    app.add_handler(MessageHandler(filters.PHOTO, image_handler))
+    app.add_handler(MessageHandler(filters.CONTACT, access_handler))
+    app.add_handler(MessageHandler(filters.Document.mime_type("video/mp4"), gif_handler))
+    app.add_handler(MessageHandler(filters.TEXT, text))
 
-    dp.add_handler(MessageHandler(Filters.voice, voice_handler))
-    dp.add_handler(MessageHandler(Filters.photo, image_handler))
-    dp.add_handler(MessageHandler(Filters.contact, access_handler))
-    dp.add_handler(MessageHandler(Filters.document.mime_type("video/mp4"), gif_handler))
+    app.add_error_handler(error)
 
-    # on command i.e. message - echo the message on Telegram
-    dp.add_handler(MessageHandler(Filters.text, text))
-
-    # log all errors
-    dp.add_error_handler(error)
-
-    return updater
+    return app
 
 
 stopped = False
@@ -224,25 +194,20 @@ stopped = False
 
 class System:
     def __init__(self):
-        """Start the bot."""
-        # Create the Updater and pass it your bots token.
-        # Make sure to set use_context=True to use the new context based callbacks
-        # Post version 12 this will no longer be necessary
         logger.info('##########################   bot  #########')
         logger.info("Setting up queues")
         q.setup()
         txt.setup()
-        self.updater = make_updater()
+        self.app = make_application()
 
     def start(self):
-        self.updater.start_polling()
+        self.app.run_polling()
 
     def stop(self):
         global stopped
         if not stopped:
-            stopped = 1
-            self.updater.stop()  # this function can take seconds!
-            self.updater.idle()
+            stopped = True
+            self.app.stop_running()
         else:
             logger.info("Stop already initiated")
 
@@ -250,19 +215,15 @@ class System:
 def main(pill: threading.Event = threading.Event()) -> None:
     s = System()
     s.start()
-    pill.wait()
-    s.stop()
 
 
 if __name__ == '__main__':
     s = System()
 
     def handler(signal_received, frame):
-        # Handle any cleanup here
         logger.info('SIGINT or CTRL-C detected. Exiting gracefully')
         s.stop()
         sys.exit(0)
-
 
     signal(SIGINT, handler)
 

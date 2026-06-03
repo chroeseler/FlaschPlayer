@@ -8,14 +8,24 @@ from typing import Literal
 logger = logging.getLogger('blinky.config')
 
 
+@dataclasses.dataclass
+class Settings:
+    """Lightweight settings for the programmatic player (no env var deps)."""
+    use_neopixel: bool = dataclasses.field(default_factory=lambda: 'NEOPIXEL' in os.environ)
+    display_resolution: tuple = (25, 12)
+
+
+settings = Settings()
+
+
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class Constants:
-    work_dir: os.environ = os.environ['WORK_DIR']
+    work_dir: str = os.environ.get('WORK_DIR', '')
     use_neopixel: bool = 'NEOPIXEL' in os.environ
     waiting_line: Path = Path(work_dir + "/config_files/waiting_line")
     waiting_line_lock: Path = Path(work_dir + "/config_files/waiting_line.lock")
-    ad_link: str = os.environ['AD_LINK']
-    root: int = int(os.environ['ROOT'])
+    ad_link: str = os.environ.get('AD_LINK', '')
+    root: int = int(os.environ.get('ROOT', '0'))
     saved_config: Path = Path(work_dir + '/config_files/dumped_config')
 
 
@@ -28,7 +38,7 @@ class Options:
     pattern: str = 'default'
     led_type: Literal['rgb', 'grb'] = 'grb'
     adtime: int = 1200
-    allowed_ids: list[int, ...] = dataclasses.field(default_factory=lambda: [int(os.environ['ROOT'])])
+    allowed_ids: list[int, ...] = dataclasses.field(default_factory=lambda: [int(os.environ.get('ROOT', '0'))])
     init: bool = False
 
     def __post_init__(self):
