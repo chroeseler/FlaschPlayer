@@ -19,7 +19,7 @@ class Display(ABC):
     """Common interface shared by NeoPixelDisplay and PyGameDisplay."""
 
     @abstractmethod
-    def set_xy(self, x: int, y: int, color: Sequence[int]) -> None: ...
+    def set_xy(self, x: int, y: int, color: Sequence[float]) -> None: ...
 
     @abstractmethod
     def show(self) -> str | None: ...
@@ -60,11 +60,11 @@ class NeoPixelDisplay(Display):
     def set_brightness(self):
         self.brightness = Options.brightness
 
-    def set_xy(self, x: int, y: int, value: Sequence[int]) -> None:
+    def set_xy(self, x: int, y: int, value: Sequence[float]) -> None:
         led_id = self.matrix[y][x]
         logger.debug('set_xy x: %s, y: %s, val: %s, id: %s', x, y, value, led_id)
         dark = all(ch <= 3 for ch in value)
-        rgb: tuple[int, int, int] = (0, 0, 0) if dark else (int(value[0]), int(value[1]), int(value[2]))
+        rgb: tuple[float, float, float] = (0, 0, 0) if dark else (value[0], value[1], value[2])
 
         if self.led_type == 'grb':
             rgb = (rgb[1], rgb[0], rgb[2])
@@ -165,7 +165,7 @@ class PyGameDisplay(Display):
     def set_brightness(self):
         self.brightness = Options.brightness
 
-    def set_xy(self, x: int, y: int, color: Sequence[int]) -> None:
+    def set_xy(self, x: int, y: int, color: Sequence[float]) -> None:
         x_offset = x * self.pixel_size
         y_offset = y * self.pixel_size
         scaled = tuple(self.brightness * ch for ch in color)

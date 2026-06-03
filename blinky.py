@@ -1,5 +1,4 @@
 """Blinky: Main contributor to FlaschPlayer"""
-import dataclasses
 import glob
 import logging
 import os
@@ -7,56 +6,67 @@ import random
 import sys
 import threading
 import time
+from collections.abc import Generator, Iterator
 from pathlib import Path
+from typing import cast
 
 from PIL import Image, ImageSequence
 
 import display as d
 from display import Display
-from typing import cast
 import text_queue as txt_q
 import thequeue as q
 from config import Constants, Main_Options as Options
 
 logger = logging.getLogger("blinky.led")
 
-TEXT = None
 SKIP = Path(f'{Constants.work_dir}/config_files/skip')
 
 
-@dataclasses.dataclass
-class Data:
-    reminder_time: float = dataclasses.field(default_factory=time.monotonic)
+class GifPlayer:
+    """Plays GIF files and background images on a Display.
 
+    Encapsulates per-play state (text overlay generator, ad timer) so that
+    text scrolls smoothly across GIF transitions without leaking globals.
+    """
 
-def display_gif(display, filepath, display_resolution):
-    """Main action point
+    def __init__(self, display: Display, display_resolution: tuple[int, int]) -> None:
+        self._display = display
+        self._resolution = display_resolution
+        self._text_gen: Iterator | None = None
+        self._reminder_time: float = time.monotonic()
 
-    The methods take the background gif and sets frame by frame
-    every pixel. After every frame the display.show() method is called.
-    Also, the waiting list is checked. If a gif is in the list
-    it will be displayed immediately. This repeats until no further
-    gifs are in line"""
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
 
-    def draw_frame(frame):
+    def play(self, filepath: str) -> None:
+        self._filepath = filepath
+        self._draw_gif(filepath)
+
+    # ------------------------------------------------------------------
+    # Frame rendering
+    # ------------------------------------------------------------------
+
+    def _draw_frame(self, frame: Image.Image) -> None:
         rgb_frame = frame.convert('RGB')
-        txt = get_text()
-        for y in range(display_resolution[1]):
-            for x in range(display_resolution[0]):
+        txt = self._get_text()
+        for y in range(self._resolution[1]):
+            for x in range(self._resolution[0]):
+                pixel = cast(tuple[int, int, int], rgb_frame.getpixel((x, y)))
                 if not txt:
-                    display.set_xy(x, y, rgb_frame.getpixel((x, y)))
+                    self._display.set_xy(x, y, pixel)
                 else:
-                    old_rgb = list(rgb_frame.getpixel((x, y)))
-                    new_rgb = tuple([ch * 0.15 for ch in old_rgb])
-                    display.set_xy(x, y, new_rgb)
+                    new_rgb = tuple(ch * 0.15 for ch in pixel)
+                    self._display.set_xy(x, y, new_rgb)
         if txt:
-            Data.reminder_time = time.monotonic()
-            write_text(txt, display_resolution)
-        elif time.monotonic() - Data.reminder_time > Options.adtime:
+            self._reminder_time = time.monotonic()
+            self._write_text(txt)
+        elif time.monotonic() - self._reminder_time > Options.adtime:
             txt_q.put(f'Write me at t.me/{Constants.ad_link}')
-            write_text(get_text(), display_resolution)
-        if display.is_running():
-            display.show()
+            self._write_text(self._get_text())
+        if self._display.is_running():
+            self._display.show()
         else:
             logger.warning("display.show() called but display not running")
         if 'duration' in frame.info:
@@ -64,31 +74,35 @@ def display_gif(display, filepath, display_resolution):
                 if frame.info['duration'] > 100:
                     time.sleep((frame.info['duration'] - 100) / 1000)
 
-    def write_text(text, screen_resolution):
+    def _write_text(self, text) -> None:
+        if not text:
+            return
         for coord in text:
-            if coord[0] < screen_resolution[0]:
-                display.set_xy(coord[0], coord[1], (255, 255, 255))
+            if coord[0] < self._resolution[0]:
+                self._display.set_xy(coord[0], coord[1], (255, 255, 255))
 
-    def get_text():
-        global TEXT
-        if not TEXT and txt_q.has_items():
+    # ------------------------------------------------------------------
+    # Text overlay state machine
+    # ------------------------------------------------------------------
+
+    def _get_text(self):
+        if not self._text_gen and txt_q.has_items():
             text = txt_q.pop()
-            TEXT = text_generator(text, display_resolution)
-            text = next(TEXT, None)
-            return text
-        elif TEXT is not None:
-            text = next(TEXT, None)
+            self._text_gen = self._text_generator(text, self._resolution)
+            return next(self._text_gen, None)
+        elif self._text_gen is not None:
+            text = next(self._text_gen, None)
             if text:
                 return text
-            else:
-                TEXT = None
-                return None
+            self._text_gen = None
+        return None
 
-    def text_generator(text: list[list[int]], screen_resolution: tuple[int, int]):
-        """The generator gets a list with the dot coordinates of the text letters.
-        They all get moved on the x-axis to the be outside on the of the display
-        and then get moved back one x coordinate per yield. If an x coordinate reaches 0
-        it gets removes from the list. The generator stops if the list is empty"""
+    def _text_generator(
+        self,
+        text: list[list[int]],
+        screen_resolution: tuple[int, int],
+    ) -> Generator:
+        """Shifts text dots one x-column per text_speed frames until all are off screen."""
         frame_counter = 0
         for dot in range(len(text)):
             text[dot][0] += screen_resolution[0]
@@ -106,50 +120,50 @@ def display_gif(display, filepath, display_resolution):
                 text = [x for x in text if x not in remove]
                 yield text
 
-    def bury_in_graveyard():
-        os.rename(filepath, f'{Constants.work_dir}/graveyard/{time.time()}.gif')
+    # ------------------------------------------------------------------
+    # GIF lifecycle helpers
+    # ------------------------------------------------------------------
 
-    def show_photo(image):
-        # photos in gif container get shown 5 seconds
-        for _ in range(50):
-            draw_frame(image)
+    def _is_background(self) -> bool:
+        return "backgrounds" in self._filepath
 
-    def is_background():
-        return "backgrounds" in filepath
-
-    def should_abort():
+    def _should_abort(self) -> bool:
         if SKIP.exists():
             os.remove(SKIP)
             return True
-        return is_background() and q.has_items()
+        return self._is_background() and q.has_items()
 
-    def loop_gif(image, duration):
+    def _show_photo(self, image: Image.Image) -> None:
+        for _ in range(50):
+            self._draw_frame(image)
+
+    def _loop_gif(self, image: Image.Image, duration: int) -> None:
         runtime = 0
-        while runtime <= duration and not should_abort() and display.is_running():
+        while runtime <= duration and not self._should_abort() and self._display.is_running():
             for frame in ImageSequence.Iterator(image):
-                display.set_brightness()
-                if not display.is_running():
+                self._display.set_brightness()
+                if not self._display.is_running():
                     break
                 runtime += frame.info['duration']
-                draw_frame(frame)
-                if should_abort():
+                self._draw_frame(frame)
+                if self._should_abort():
                     break
 
-    def draw_gif(gif_path: Path):
+    def _bury_in_graveyard(self) -> None:
+        os.rename(self._filepath, f'{Constants.work_dir}/graveyard/{time.time()}.gif')
+
+    def _draw_gif(self, gif_path: str) -> None:
         total_loop_duration = 500
         logger.info('Playing: %s', gif_path)
         img = Image.open(gif_path)
         if 'duration' in img.info:
-            # Adding the durations of every frame until at least 5 sec runtime
-            loop_gif(img, total_loop_duration)
+            self._loop_gif(img, total_loop_duration)
         else:
-            show_photo(img)
+            self._show_photo(img)
 
-        if not is_background():
+        if not self._is_background():
             logger.info("Moving to graveyard: %s", gif_path)
-            bury_in_graveyard()
-
-    draw_gif(filepath)
+            self._bury_in_graveyard()
 
 
 def init(x_boxes: int, y_boxes: int, rotate_90: bool) -> tuple[tuple[int, int], Display]:
@@ -168,7 +182,7 @@ def init(x_boxes: int, y_boxes: int, rotate_90: bool) -> tuple[tuple[int, int], 
     return display_resolution, display
 
 
-def matches_pattern(filepath, pattern):
+def matches_pattern(filepath: str, pattern: str) -> bool:
     filepath = filepath.lower()
     tokens = pattern.lower().split(" ")
     matches = True
@@ -183,12 +197,11 @@ def main(pill: threading.Event = threading.Event(), x_boxes: int = 5, y_boxes: i
     res_str = f'{display_resolution[0]}_{display_resolution[1]}'
     if not os.path.isdir(f"{Constants.work_dir}/data/backgrounds/{res_str}/"):
         raise FileNotFoundError(f'No background with fitting resolution available at {Constants.work_dir}/data/backgrounds/{res_str}/')
-    # Setup Media Wait list
 
     os.makedirs(f"{Constants.work_dir}/graveyard", exist_ok=True)
-    # os.chown(f"{Constants.work_dir}/graveyard", uid=1000, gid=1000)
     os.makedirs(f"{Constants.work_dir}/gifs", exist_ok=True)
-    # os.chown(f"{Constants.work_dir}/gifs", uid=1000, gid=1000)
+
+    player = GifPlayer(display, display_resolution)
 
     while display.is_running() and not pill.is_set():
         if not (next_gif := q.take()):
@@ -204,7 +217,7 @@ def main(pill: threading.Event = threading.Event(), x_boxes: int = 5, y_boxes: i
                     backgrounds = glob.glob(f"{Constants.work_dir}/data/backgrounds/{res_str}/default/*.gif")
             next_gif = random.choice(backgrounds)
         try:
-            display_gif(display, next_gif, display_resolution)
+            player.play(next_gif)
         except KeyboardInterrupt:
             logger.info("Interrupted, exit, over and out")
             sys.exit()
@@ -213,7 +226,7 @@ def main(pill: threading.Event = threading.Event(), x_boxes: int = 5, y_boxes: i
             time.sleep(2)
 
 
-def debug(x_boxes: int = 5, y_boxes: int = 3, rotate_90: bool = False):
+def debug(x_boxes: int = 5, y_boxes: int = 3, rotate_90: bool = False) -> None:
     _resolution, display = init(x_boxes, y_boxes, rotate_90)
     cast(d.NeoPixelDisplay, display).run_debug()
 
