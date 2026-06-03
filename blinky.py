@@ -45,7 +45,7 @@ def display_gif(display, filepath, display_resolution):
                     display.set_xy(x, y, rgb_frame.getpixel((x, y)))
                 else:
                     old_rgb = list(rgb_frame.getpixel((x, y)))
-                    new_rgb = tuple([x * 0.15 for x in old_rgb])
+                    new_rgb = tuple([ch * 0.15 for ch in old_rgb])
                     display.set_xy(x, y, new_rgb)
         if txt:
             Data.reminder_time = time.monotonic()
@@ -150,12 +150,6 @@ def display_gif(display, filepath, display_resolution):
     draw_gif(filepath)
 
 
-def files(path: Path):
-    for file in os.listdir(path):
-        if os.path.isfile(os.path.join(path, file)):
-            yield file
-
-
 def init(x_boxes: int, y_boxes: int, rotate_90: bool):
     led_count = x_boxes * y_boxes * 20
     x_res, y_res = (x_boxes * 5, y_boxes * 4) if not rotate_90 else (x_boxes * 4, y_boxes * 5)
@@ -168,7 +162,7 @@ def init(x_boxes: int, y_boxes: int, rotate_90: bool):
         logger.info("Setting up PyGame Debug display")
         display = d.PyGameDisplay(x_res, y_res, 50)
 
-    return display_resolution, display, led_count
+    return display_resolution, display
 
 
 def matches_pattern(filepath, pattern):
@@ -182,7 +176,7 @@ def matches_pattern(filepath, pattern):
 
 
 def main(pill: threading.Event = threading.Event(), x_boxes: int = 5, y_boxes: int = 3, rotate_90: bool = False) -> None:
-    display_resolution, display, _ = init(x_boxes, y_boxes, rotate_90)
+    display_resolution, display = init(x_boxes, y_boxes, rotate_90)
     res_str = f'{display_resolution[0]}_{display_resolution[1]}'
     if not os.path.isdir(f"{Constants.work_dir}/data/backgrounds/{res_str}/"):
         raise FileNotFoundError(f'No background with fitting resolution available at {Constants.work_dir}/data/backgrounds/{res_str}/')
@@ -203,7 +197,7 @@ def main(pill: threading.Event = threading.Event(), x_boxes: int = 5, y_boxes: i
                 backgrounds = glob.glob(f"{Constants.work_dir}/data/backgrounds/{res_str}/*/*.gif")
                 backgrounds = list(filter(lambda f: matches_pattern(f, pattern), backgrounds))
                 if not backgrounds:
-                    logger.exception("No gif in %s/data/%s/backgrounds/%s or %s/gifs",  Constants.work_dir, res_str, mood, Constants.work_dir)
+                    logger.warning("No gif in %s/data/%s/backgrounds/%s or %s/gifs", Constants.work_dir, res_str, mood, Constants.work_dir)
                     backgrounds = glob.glob(f"{Constants.work_dir}/data/backgrounds/{res_str}/default/*.gif")
             next_gif = random.choice(backgrounds)
         try:
@@ -217,7 +211,7 @@ def main(pill: threading.Event = threading.Event(), x_boxes: int = 5, y_boxes: i
 
 
 def debug(x_boxes: int = 5, y_boxes: int = 3, rotate_90: bool = False):
-    display_resolution, display, _ = init(x_boxes, y_boxes, rotate_90)
+    display_resolution, display = init(x_boxes, y_boxes, rotate_90)
     display.run_debug()
 
 
