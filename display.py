@@ -2,6 +2,7 @@ import logging
 import os
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 
 import board
 
@@ -18,7 +19,7 @@ class Display(ABC):
     """Common interface shared by NeoPixelDisplay and PyGameDisplay."""
 
     @abstractmethod
-    def set_xy(self, x: int, y: int, color: tuple) -> None: ...
+    def set_xy(self, x: int, y: int, color: Sequence[int]) -> None: ...
 
     @abstractmethod
     def show(self) -> str | None: ...
@@ -59,20 +60,16 @@ class NeoPixelDisplay(Display):
     def set_brightness(self):
         self.brightness = Options.brightness
 
-    def set_xy(self, x: int, y: int, value: list[int, int, int]):
+    def set_xy(self, x: int, y: int, value: Sequence[int]) -> None:
         led_id = self.matrix[y][x]
         logger.debug('set_xy x: %s, y: %s, val: %s, id: %s', x, y, value, led_id)
-        dark = True
-        for color in value:
-            if color > 3:
-                dark = False
-        if dark:
-            value = (0, 0, 0)
+        dark = all(ch <= 3 for ch in value)
+        rgb: tuple[int, int, int] = (0, 0, 0) if dark else (int(value[0]), int(value[1]), int(value[2]))
 
         if self.led_type == 'grb':
-            value = [value[1], value[0], value[2]]
+            rgb = (rgb[1], rgb[0], rgb[2])
 
-        self.strip[led_id] = tuple(self.brightness * x for x in value)
+        self.strip[led_id] = tuple(self.brightness * ch for ch in rgb)
 
     def flash(self):
         for i in range(self.led_count):
@@ -168,8 +165,8 @@ class PyGameDisplay(Display):
     def set_brightness(self):
         self.brightness = Options.brightness
 
-    def set_xy(self, x, y, color):
+    def set_xy(self, x: int, y: int, color: Sequence[int]) -> None:
         x_offset = x * self.pixel_size
         y_offset = y * self.pixel_size
-        color = tuple(self.brightness * x for x in color)
-        self.pg.draw.rect(self.surface, color, self.pg.Rect(x_offset, y_offset, self.pixel_size, self.pixel_size))
+        scaled = tuple(self.brightness * ch for ch in color)
+        self.pg.draw.rect(self.surface, scaled, self.pg.Rect(x_offset, y_offset, self.pixel_size, self.pixel_size))

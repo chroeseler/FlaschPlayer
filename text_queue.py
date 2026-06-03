@@ -1,6 +1,7 @@
 import json
 import logging
 from pathlib import Path
+from typing import Any, cast
 
 from PIL import Image
 from filelock import FileLock
@@ -30,7 +31,7 @@ def put(text: str):
         return t_char, width + 1
 
     logger.info('Adding "%s" to text queue', text)
-    text_matrix = []
+    text_matrix: list[list[int]] = []
     text_width = 0
     for character in text:
         text_matrix, text_width = add_char_coord(character, text_width, text_matrix)
@@ -61,11 +62,11 @@ def pop():
 def dotting(path: Path):
     img = Image.open(path)
     dots = img.convert('L')
-    letter_matrix = {'dots': []}
+    letter_matrix: dict[str, Any] = {'dots': []}
     furthest_x = 0
     for x in range(img.size[0]):
         for y in range(img.size[1]):
-            g_scale_value = dots.getpixel((x, y))
+            g_scale_value = cast(int, dots.getpixel((x, y)))  # mode 'L' always returns int
             if g_scale_value > 100:
                 furthest_x = x
                 letter_matrix['dots'].append((x, y + 1))

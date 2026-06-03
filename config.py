@@ -38,7 +38,7 @@ class Options:
     pattern: str = 'default'
     led_type: Literal['rgb', 'grb'] = 'grb'
     adtime: int = 1200
-    allowed_ids: list[int, ...] = dataclasses.field(default_factory=lambda: [int(os.environ.get('ROOT', '0'))])
+    allowed_ids: list[int] = dataclasses.field(default_factory=lambda: [int(os.environ.get('ROOT', '0'))])
 
     def __post_init__(self):
         if os.path.exists(Constants.saved_config):

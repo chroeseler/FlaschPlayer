@@ -12,6 +12,8 @@ from pathlib import Path
 from PIL import Image, ImageSequence
 
 import display as d
+from display import Display
+from typing import cast
 import text_queue as txt_q
 import thequeue as q
 from config import Constants, Main_Options as Options
@@ -24,7 +26,7 @@ SKIP = Path(f'{Constants.work_dir}/config_files/skip')
 
 @dataclasses.dataclass
 class Data:
-    reminder_time: time.monotonic = time.monotonic()
+    reminder_time: float = dataclasses.field(default_factory=time.monotonic)
 
 
 def display_gif(display, filepath, display_resolution):
@@ -82,7 +84,7 @@ def display_gif(display, filepath, display_resolution):
                 TEXT = None
                 return None
 
-    def text_generator(text: str, screen_resolution: list[int, int]):
+    def text_generator(text: list[list[int]], screen_resolution: tuple[int, int]):
         """The generator gets a list with the dot coordinates of the text letters.
         They all get moved on the x-axis to the be outside on the of the display
         and then get moved back one x coordinate per yield. If an x coordinate reaches 0
@@ -150,11 +152,12 @@ def display_gif(display, filepath, display_resolution):
     draw_gif(filepath)
 
 
-def init(x_boxes: int, y_boxes: int, rotate_90: bool):
+def init(x_boxes: int, y_boxes: int, rotate_90: bool) -> tuple[tuple[int, int], Display]:
     led_count = x_boxes * y_boxes * 20
     x_res, y_res = (x_boxes * 5, y_boxes * 4) if not rotate_90 else (x_boxes * 4, y_boxes * 5)
     display_resolution = (x_res, y_res)
 
+    display: Display
     if Constants.use_neopixel:
         logger.info("Setting up NeoPixel display")
         display = d.NeoPixelDisplay(led_count, x_boxes, y_boxes, rotate_90)
@@ -211,8 +214,8 @@ def main(pill: threading.Event = threading.Event(), x_boxes: int = 5, y_boxes: i
 
 
 def debug(x_boxes: int = 5, y_boxes: int = 3, rotate_90: bool = False):
-    display_resolution, display = init(x_boxes, y_boxes, rotate_90)
-    display.run_debug()
+    _resolution, display = init(x_boxes, y_boxes, rotate_90)
+    cast(d.NeoPixelDisplay, display).run_debug()
 
 
 if __name__ == '__main__':
