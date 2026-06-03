@@ -23,3 +23,11 @@ dependencies = [
     "tornado>=6.3.2",
     "typing_extensions>=4.6.3",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
