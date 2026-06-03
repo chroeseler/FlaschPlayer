@@ -3,7 +3,6 @@ import os
 import time
 
 import board
-import numpy as np
 
 import layout
 from config import Main_Options as Options
@@ -12,7 +11,7 @@ logger = logging.getLogger("blinky.display")
 
 
 class NeoPixelDisplay:
-    resolution: set[int, int]
+    resolution: tuple[int, int]
     led_count: int
 
     def __init__(self, led_count: int, x_boxes: int, y_boxes: int, rotate_90: bool):
@@ -22,7 +21,7 @@ class NeoPixelDisplay:
         else:
             self.strip = [None] * led_count
         self.matrix = layout.full_layout(x_boxes, y_boxes, rotate_90=rotate_90)
-        self.resolution = {x_boxes * 5, y_boxes * 4} if not rotate_90 else {x_boxes * 4, y_boxes * 5}
+        self.resolution = (x_boxes * 5, y_boxes * 4) if not rotate_90 else (x_boxes * 4, y_boxes * 5)
         self.led_count = led_count
         self.brightness = Options.brightness
         self.led_type = Options.led_type
@@ -34,8 +33,9 @@ class NeoPixelDisplay:
     def show(self):
         if os.uname()[4][:3] != "arm" and os.uname()[4] != 'aarch64':
             logger.error("Not an ARM thing!")
+            return None
         self.strip.show()
-        return None  # No keyboard events on NeoPixel display
+        return None
 
     def set_brightness(self):
         self.brightness = Options.brightness
@@ -145,12 +145,6 @@ class PyGameDisplay:
         pg.display.flip()
         command = self.process_events()
         return command
-
-    def paint_random(self):
-        color = tuple(np.random.choice(range(256), size=3))
-        self.set_xy(np.random.choice(range(self.x_pixels)),
-                    np.random.choice(range(self.y_pixels)),
-                    color)
 
     def set_brightness(self):
         self.brightness = Options.brightness
