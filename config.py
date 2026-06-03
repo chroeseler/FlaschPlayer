@@ -46,10 +46,14 @@ class Options:
                 old_config = json.load(fp=save_file)
             for key, value in old_config.items():
                 object.__setattr__(self, key, value)
+        # Mark initialisation complete; __setattr__ guards on this flag.
+        # Use object.__setattr__ so the flag itself doesn't trigger a save.
+        object.__setattr__(self, '_initialized', True)
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
-        self.__save_config()
+        if getattr(self, '_initialized', False):
+            self.__save_config()
 
     def add_id(self, telegram_id):
         self.allowed_ids.append(telegram_id)
@@ -60,8 +64,9 @@ class Options:
         self.__save_config()
 
     def __save_config(self):
+        data = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
         with open(Constants.saved_config, 'w+') as save_file:
-            json.dump(self, fp=save_file, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+            json.dump(data, fp=save_file, sort_keys=True, indent=4)
 
 
 Main_Options = Options()
