@@ -1,13 +1,20 @@
 [Unit]
-Description=Starting blinky.py
+Description=FlaschPlayer - LED Display Controller
+After=network.target
+Wants=network.target
 
 [Service]
 Type=simple
-ExecStart=/path/to/venv/bin/python3 /path/to/work_dir/entry_point.py
-Restart=always
+ExecStart=/path/to/flaschplayer/.venv/bin/python3 /path/to/flaschplayer/entry_point.py
+WorkingDirectory=/path/to/flaschplayer
+Restart=on-failure
+RestartSec=5
 StartLimitBurst=36000
 User=root
-Environment="WORK_DIR=/path/to/work_dir"
+Environment="WORK_DIR=/path/to/flaschplayer"
 Environment="NEOPIXEL=True"
-Environment="BOT_TOKEN=TOKEN"
+Environment="BOT_TOKEN=YOUR_BOT_TOKEN"
+Environment="ROOT=YOUR_TELEGRAM_USER_ID"
 
+[Install]
+WantedBy=multi-user.target
