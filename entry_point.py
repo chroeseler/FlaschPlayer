@@ -27,6 +27,7 @@ class BlinkyStarter:
         )
         self.bot_thread = threading.Thread(
             target=blinky_bot.main,
+            kwargs={'pill': self.pill2kill},
             name='blinky_bot',
             daemon=True,
         )
@@ -46,8 +47,9 @@ class BlinkyStarter:
     def stop(self):
         logger.info('Stopping…')
         self.pill2kill.set()
-        self.interface_process.terminate()
-        self.interface_process.join(timeout=5)
+        if self.interface_process.is_alive():
+            self.interface_process.terminate()
+            self.interface_process.join(timeout=5)
         self.blinky_thread.join(timeout=5)
         # bot thread is daemon — exits with the process
 
