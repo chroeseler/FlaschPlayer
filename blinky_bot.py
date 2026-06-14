@@ -255,6 +255,28 @@ def _has_access(chat_id: int) -> bool:
     return chat_id in Options.allowed_ids
 
 
+async def relay_to_root(update, context):
+    """Forward every non-root message to root for monitoring."""
+    if not update.effective_message or not update.effective_user:
+        return
+    if update.effective_chat.id == Constants.root:
+        return
+
+    sender = update.effective_user
+    username = f" (@{sender.username})" if sender.username else ""
+    label = f"📨 {sender.full_name}{username} [{sender.id}]:"
+
+    try:
+        await context.bot.send_message(Constants.root, label)
+        await context.bot.forward_message(
+            chat_id=Constants.root,
+            from_chat_id=update.effective_chat.id,
+            message_id=update.effective_message.message_id,
+        )
+    except Exception:
+        logger.exception("Failed to relay message to root")
+
+
 async def check_access(update) -> bool:
     if not _has_access(update.effective_chat.id):
         await update.effective_chat.send_message('Access denied!')
@@ -410,6 +432,9 @@ def make_application():
     app.add_handler(MessageHandler(filters.CONTACT, access_handler))
     app.add_handler(MessageHandler(filters.Document.MimeType("video/mp4"), gif_handler))
     app.add_handler(MessageHandler(filters.TEXT, text))
+
+    # Group 1: runs for every message regardless of what group 0 did
+    app.add_handler(MessageHandler(filters.ALL, relay_to_root), group=1)
 
     app.add_error_handler(error)
 
