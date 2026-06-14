@@ -23,11 +23,68 @@ logger = logging.getLogger("blinky.bot")
 
 
 async def start(update, context):
-    await update.effective_chat.send_message('Hi!')
+    logger.info("Handler: /start from chat_id=%s", update.effective_chat.id)
+    await update.effective_chat.send_message('Hi! Type /help to see what I can do.')
 
 
 async def help(update, context):
-    await update.effective_chat.send_message('Help!')
+    chat_id = update.effective_chat.id
+    has_access = _has_access(chat_id)
+    is_root = chat_id == Constants.root
+
+    public_section = (
+        "🎬 *Anyone can do:*\n"
+        "  Send a text message → scrolls across the display (max 120 chars)\n"
+        "  Send a photo or GIF → displayed on screen\n"
+        "  Send a video (mp4) → converted and queued\n"
+        "  /start — say hi\n"
+        "  /help — this message\n"
+    )
+
+    if not has_access:
+        await update.effective_chat.send_message(
+            public_section + "\n_You don't have control access. Ask the admin to add you._",
+            parse_mode='Markdown',
+        )
+        return
+
+    from blinky import _discover_programs
+    import os
+
+    res_str = '25_12'
+    backgrounds_root = os.path.join(Constants.work_dir, 'data', 'backgrounds', res_str)
+    moods = sorted(
+        d for d in os.listdir(backgrounds_root)
+        if os.path.isdir(os.path.join(backgrounds_root, d))
+    )
+    programs = [p.split('.')[-1] for p in _discover_programs()]
+
+    control_section = (
+        "🎛 *Control commands:*\n"
+        f"  /mood <name> — set mood playlist\n"
+        f"    Moods: {', '.join(moods)}\n"
+        f"  /play <keyword> — play GIFs matching a keyword\n"
+        f"  /program [name] — switch to programmatic mode (cycles all if no name)\n"
+        f"    Programs: {', '.join(programs)}\n"
+        f"  /programs — list programs\n"
+        f"  /skip — skip current GIF or program\n"
+        f"  /brightness <0–100> — set brightness (e.g. /brightness 40)\n"
+        f"  /text\\_speed <number> — scroll speed, default 70 (higher = slower)\n"
+    )
+
+    message = public_section + "\n" + control_section
+
+    if is_root:
+        root_section = (
+            "\n👑 *Root-only commands:*\n"
+            "  /addmaintainer — grant access (reply to their msg, forward their msg, or numeric ID)\n"
+            "  /removemaintainer — revoke access\n"
+            "  /listmaintainers — show all users with access\n"
+            "  Share a contact → same as /addmaintainer (toggles access)\n"
+        )
+        message += root_section
+
+    await update.effective_chat.send_message(message, parse_mode='Markdown')
 
 
 async def text_speed(update, context):
