@@ -1,4 +1,5 @@
 #!/usr/bin/ python3
+import asyncio
 import logging
 import os
 import sys
@@ -70,10 +71,11 @@ async def play(update, context):
 
 
 async def text(update, context):
-    if len(update.message.text) > 120:
+    logger.info("Handler: text from chat_id=%s: %s", update.effective_chat.id, update.effective_message.text[:40])
+    if len(update.effective_message.text) > 120:
         await update.effective_chat.send_message("Sorry that's quite the text and I'm a little lazy. Can you make it shorter?")
     else:
-        txt.put(update.message.text)
+        txt.put(update.effective_message.text)
 
 
 async def skip(update, context):
@@ -100,8 +102,8 @@ async def error(update, context):
 
 async def gif_handler(update, context):
     logger.info(f'Starting Gif Handler')
-    if update.message.document.file_size < 20000000:
-        mp4 = await context.bot.get_file(update.message.document.file_id)
+    if update.effective_message.document.file_size < 20000000:
+        mp4 = await context.bot.get_file(update.effective_message.document.file_id)
         await mp4.download_to_drive(f'{Constants.work_dir}/media.mp4')
         logger.info(os.path.getsize(f'{Constants.work_dir}/media.mp4'))
         put_gifs(f'{Constants.work_dir}/media.mp4')
@@ -113,7 +115,7 @@ async def gif_handler(update, context):
 
 async def image_handler(update, context):
     logger.info(f'Starting Image Handler')
-    pic = await context.bot.get_file(update.message.photo[-1].file_id)
+    pic = await context.bot.get_file(update.effective_message.photo[-1].file_id)
     await pic.download_to_drive(f'{Constants.work_dir}/photo.gif')
     put_gifs(f'{Constants.work_dir}/photo.gif')
 
@@ -142,13 +144,13 @@ def put_gifs(telegram_file):
 
 async def access_handler(update, context):
     logger.info(f'Starting Access Handler')
-    if update.message.chat.id != Constants.root:
+    if update.effective_chat.id != Constants.root:
         await update.effective_chat.send_message("Access denied!")
     else:
         await update.effective_chat.send_message("Access granted.")
-        telegram_id = update.message.contact.user_id
-        first = update.message.contact.first_name
-        last = update.message.contact.last_name
+        telegram_id = update.effective_message.contact.user_id
+        first = update.effective_message.contact.first_name
+        last = update.effective_message.contact.last_name
         if telegram_id not in Options.allowed_ids:
             Options.add_id(telegram_id)
             await update.effective_chat.send_message(f'Added User {first} {last} to access list')
@@ -157,8 +159,12 @@ async def access_handler(update, context):
             await update.effective_chat.send_message(f'Removed User {first} {last} from access list')
 
 
+def _has_access(chat_id: int) -> bool:
+    return chat_id in Options.allowed_ids
+
+
 async def check_access(update) -> bool:
-    if update.message.chat.id not in Options.allowed_ids:
+    if not _has_access(update.effective_chat.id):
         await update.effective_chat.send_message('Access denied!')
         return False
     return True
@@ -181,7 +187,7 @@ def make_application():
     app.add_handler(MessageHandler(filters.VOICE, voice_handler))
     app.add_handler(MessageHandler(filters.PHOTO, image_handler))
     app.add_handler(MessageHandler(filters.CONTACT, access_handler))
-    app.add_handler(MessageHandler(filters.Document.mime_type("video/mp4"), gif_handler))
+    app.add_handler(MessageHandler(filters.Document.MimeType("video/mp4"), gif_handler))
     app.add_handler(MessageHandler(filters.TEXT, text))
 
     app.add_error_handler(error)
@@ -200,8 +206,26 @@ class System:
         txt.setup()
         self.app = make_application()
 
-    def start(self):
-        self.app.run_polling()
+    async def _run(self, pill: threading.Event) -> None:
+        await self.app.initialize()
+        await self.app.start()
+        await self.app.updater.start_polling()
+        logger.info("Bot polling started")
+        while not pill.is_set():
+            await asyncio.sleep(0.5)
+        logger.info("Bot stopping…")
+        await self.app.updater.stop()
+        await self.app.stop()
+        await self.app.shutdown()
+
+    def start(self, pill: threading.Event = threading.Event()) -> None:
+        import asyncio as _asyncio
+        loop = _asyncio.new_event_loop()
+        _asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(self._run(pill))
+        finally:
+            loop.close()
 
     def stop(self):
         global stopped
@@ -214,7 +238,7 @@ class System:
 
 def main(pill: threading.Event = threading.Event()) -> None:
     s = System()
-    s.start()
+    s.start(pill)
 
 
 if __name__ == '__main__':
