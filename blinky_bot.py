@@ -70,6 +70,39 @@ async def play(update, context):
         await update.effective_chat.send_message("You need to provide something to select GIFs from our catalogue")
 
 
+async def program(update, context):
+    if not await check_access(update):
+        return
+    from blinky import _discover_programs
+    available = [p.split('.')[-1] for p in _discover_programs()]
+    if context.args:
+        name = context.args[0]
+        if name not in available:
+            await update.effective_chat.send_message(
+                f"Unknown program '{name}'. Available: {', '.join(available)}"
+            )
+            return
+        Options.program = name
+        Options.playlistmode = 'programmatic'
+        await update.effective_chat.send_message(f"Switched to programmatic mode: {name}")
+    else:
+        Options.program = ''
+        Options.playlistmode = 'programmatic'
+        await update.effective_chat.send_message(
+            f"Switched to programmatic mode (cycling all):\n{', '.join(available)}"
+        )
+
+
+async def programs(update, context):
+    if not await check_access(update):
+        return
+    from blinky import _discover_programs
+    available = [p.split('.')[-1] for p in _discover_programs()]
+    await update.effective_chat.send_message(
+        "Available programs:\n" + "\n".join(f"• {p}" for p in available)
+    )
+
+
 async def text(update, context):
     logger.info("Handler: text from chat_id=%s: %s", update.effective_chat.id, update.effective_message.text[:40])
     if len(update.effective_message.text) > 120:
@@ -182,6 +215,8 @@ def make_application():
     app.add_handler(CommandHandler("text_speed", text_speed))
     app.add_handler(CommandHandler("mood", mood))
     app.add_handler(CommandHandler("play", play))
+    app.add_handler(CommandHandler("program", program))
+    app.add_handler(CommandHandler("programs", programs))
     app.add_handler(CommandHandler("skip", skip))
 
     app.add_handler(MessageHandler(filters.VOICE, voice_handler))

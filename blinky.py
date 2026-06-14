@@ -1,5 +1,6 @@
 """Blinky: Main contributor to FlaschPlayer"""
 import glob
+import importlib
 import logging
 import os
 import random
@@ -22,6 +23,66 @@ from config import Constants, Main_Options as Options
 logger = logging.getLogger("blinky.led")
 
 SKIP = Path(f'{Constants.work_dir}/config_files/skip')
+
+PROGRAMS_DIR = Path(__file__).parent / 'programs'
+
+
+def _discover_programs() -> list[str]:
+    """Return sorted list of importable program module names that expose render()."""
+    programs = []
+    for path in sorted(PROGRAMS_DIR.glob('*.py')):
+        if path.stem.startswith('_'):
+            continue
+        name = f'programs.{path.stem}'
+        try:
+            mod = importlib.import_module(name)
+            if hasattr(mod, 'render'):
+                programs.append(name)
+        except Exception as exc:
+            logger.warning('Skipping program %s: %s', name, exc)
+    return programs
+
+
+class PixelBuffer:
+    """Captures set_xy calls from a program render() then flushes to the real display.
+
+    Allows text overlay to be applied after the program has written its frame
+    without touching any program code.
+    """
+
+    def __init__(self, display: Display, width: int, height: int) -> None:
+        self._display = display
+        self._width = width
+        self._height = height
+        self._buf: list[list[tuple[float, float, float]]] = [
+            [(0.0, 0.0, 0.0)] * width for _ in range(height)
+        ]
+
+    # Proxy Display interface so programs can call these normally
+    def set_brightness(self) -> None:
+        self._display.set_brightness()
+
+    def is_running(self) -> bool:
+        return self._display.is_running()
+
+    def set_xy(self, x: int, y: int, color: tuple) -> None:
+        if 0 <= x < self._width and 0 <= y < self._height:
+            self._buf[y][x] = color
+
+    def flush(self, text=None) -> None:
+        """Push the buffered frame to the real display, applying text overlay if needed."""
+        for y in range(self._height):
+            for x in range(self._width):
+                pixel = self._buf[y][x]
+                if text:
+                    pixel = tuple(ch * 0.15 for ch in pixel)
+                self._display.set_xy(x, y, pixel)
+        if text:
+            for coord in text:
+                if coord[0] < self._width:
+                    self._display.set_xy(coord[0], coord[1], (255, 255, 255))
+        if self._display.is_running():
+            self._display.show()
 
 
 class GifPlayer:
@@ -57,6 +118,44 @@ class GifPlayer:
     def play(self, filepath: str) -> None:
         self._filepath = filepath
         self._draw_gif(filepath)
+
+    def play_programmatic(self, pill: threading.Event) -> None:
+        """Run programmatic programs until aborted (skip, pill, or gif queued)."""
+        programs = _discover_programs()
+        if not programs:
+            logger.warning('No programs found in %s', PROGRAMS_DIR)
+            time.sleep(2)
+            return
+
+        selected = Options.program
+        program_list = [f'programs.{selected}'] if selected and f'programs.{selected}' in programs else programs
+
+        width, height = self._resolution
+        for program_name in program_list:
+            if pill.is_set():
+                break
+            # Reload so state resets each time
+            if program_name in sys.modules:
+                importlib.reload(sys.modules[program_name])
+            module = importlib.import_module(program_name)
+            fps = getattr(module, 'get_fps', lambda: 30)()
+            frame_delay = 1.0 / fps
+            frame_num = 0
+            logger.info('Programmatic: playing %s at %d fps', program_name, fps)
+
+            while self._display.is_running() and not pill.is_set():
+                if SKIP.exists():
+                    os.remove(SKIP)
+                    break
+                if q.has_items():
+                    break
+                self._display.set_brightness()
+                buf = PixelBuffer(self._display, width, height)
+                module.render(buf, width, height, frame_num)
+                txt = self._get_text()
+                buf.flush(txt)
+                time.sleep(frame_delay)
+                frame_num += 1
 
     # ------------------------------------------------------------------
     # Frame rendering
@@ -226,7 +325,22 @@ def _run_loop(
     res_str: str,
 ) -> None:
     while display.is_running() and not pill.is_set():
-        if not (next_gif := q.take()):
+        if next_gif := q.take():
+            try:
+                player.play(next_gif)
+            except KeyboardInterrupt:
+                logger.info("Interrupted, exit, over and out")
+                sys.exit()
+            except AttributeError:
+                logger.exception('Background gifs setup failed. Check folders')
+                time.sleep(2)
+        elif Options.playlistmode == 'programmatic':
+            try:
+                player.play_programmatic(pill)
+            except Exception:
+                logger.exception('Programmatic player error')
+                time.sleep(2)
+        else:
             mood = Options.mood
             pattern = Options.pattern
             if Options.playlistmode == "mood":
@@ -237,15 +351,14 @@ def _run_loop(
                 if not backgrounds:
                     logger.warning("No gif in %s/data/%s/backgrounds/%s or %s/gifs", Constants.work_dir, res_str, mood, Constants.work_dir)
                     backgrounds = glob.glob(f"{Constants.work_dir}/data/backgrounds/{res_str}/default/*.gif")
-            next_gif = random.choice(backgrounds)
-        try:
-            player.play(next_gif)
-        except KeyboardInterrupt:
-            logger.info("Interrupted, exit, over and out")
-            sys.exit()
-        except AttributeError:
-            logger.exception('Background gifs setup failed. Check folders')
-            time.sleep(2)
+            try:
+                player.play(random.choice(backgrounds))
+            except KeyboardInterrupt:
+                logger.info("Interrupted, exit, over and out")
+                sys.exit()
+            except AttributeError:
+                logger.exception('Background gifs setup failed. Check folders')
+                time.sleep(2)
 
 
 def debug(x_boxes: int = 5, y_boxes: int = 3, rotate_90: bool = False) -> None:

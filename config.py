@@ -36,6 +36,7 @@ class Options:
     playlistmode: str = 'mood'
     mood: str = 'default'
     pattern: str = 'default'
+    program: str = ''  # '' = cycle all programs, 'plasma' = specific program
     led_type: Literal['rgb', 'grb'] = 'grb'
     adtime: int = 1200
     allowed_ids: list[int] = dataclasses.field(default_factory=lambda: [int(os.environ.get('ROOT', '0'))])
