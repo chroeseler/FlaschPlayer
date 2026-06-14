@@ -40,6 +40,7 @@ class Options:
     led_type: Literal['rgb', 'grb'] = 'grb'
     adtime: int = 1200
     allowed_ids: list[int] = dataclasses.field(default_factory=lambda: [int(os.environ.get('ROOT', '0'))])
+    user_names: dict = dataclasses.field(default_factory=dict)  # str(id) -> display name
 
     def __post_init__(self):
         if os.path.exists(Constants.saved_config):
@@ -56,12 +57,15 @@ class Options:
         if getattr(self, '_initialized', False):
             self.__save_config()
 
-    def add_id(self, telegram_id):
+    def add_id(self, telegram_id: int, name: str = ''):
         self.allowed_ids.append(telegram_id)
+        if name:
+            self.user_names[str(telegram_id)] = name
         self.__save_config()
 
-    def remove_id(self, telegram_id):
+    def remove_id(self, telegram_id: int):
         self.allowed_ids.remove(telegram_id)
+        self.user_names.pop(str(telegram_id), None)
         self.__save_config()
 
     def __save_config(self):

@@ -9,7 +9,8 @@ from pathlib import Path
 from signal import SIGINT, signal
 
 from ffmpy import FFmpeg
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 
 import text_queue as txt
 import thequeue as q
@@ -241,12 +242,13 @@ async def access_handler(update, context):
         telegram_id = update.effective_message.contact.user_id
         first = update.effective_message.contact.first_name
         last = update.effective_message.contact.last_name
+        full_name = f'{first} {last}'.strip()
         if telegram_id not in Options.allowed_ids:
-            Options.add_id(telegram_id)
-            await update.effective_chat.send_message(f'Added User {first} {last} to access list')
+            Options.add_id(telegram_id, full_name)
+            await update.effective_chat.send_message(f'Added {full_name} to access list')
         else:
             Options.remove_id(telegram_id)
-            await update.effective_chat.send_message(f'Removed User {first} {last} from access list')
+            await update.effective_chat.send_message(f'Removed {full_name} from access list')
 
 
 def _has_access(chat_id: int) -> bool:
@@ -258,6 +260,129 @@ async def check_access(update) -> bool:
         await update.effective_chat.send_message('Access denied!')
         return False
     return True
+
+
+def _origin_user(msg):
+    """Return (id, name) from a message's forward_origin, or None if not available."""
+    origin = msg.forward_origin
+    if origin is not None and hasattr(origin, 'sender_user') and origin.sender_user:
+        u = origin.sender_user
+        return u.id, u.full_name
+    return None, None
+
+
+def _resolve_user(update, context) -> tuple[int | None, str]:
+    """Extract (user_id, display_name) from reply, forward, or numeric argument."""
+    msg = update.effective_message
+
+    # Method 1: reply to a message.
+    # When root replies to a relayed-forward, the replied message has forward_origin
+    # pointing to the original sender — check that first before from_user (which is the bot).
+    if msg.reply_to_message:
+        uid, name = _origin_user(msg.reply_to_message)
+        if uid:
+            return uid, name
+        u = msg.reply_to_message.from_user
+        if u and not u.is_bot:
+            return u.id, u.full_name
+
+    # Method 2: this message itself is a forward
+    uid, name = _origin_user(msg)
+    if uid:
+        return uid, name
+
+    # Method 3: numeric ID as argument
+    if context.args:
+        try:
+            return int(context.args[0]), context.args[0]
+        except ValueError:
+            pass
+
+    return None, ''
+
+
+_MAINTAINER_USAGE = (
+    "How to identify the user:\n"
+    "• *Reply* to one of their messages with this command\n"
+    "• *Forward* any message from them to me, then send this command\n"
+    "  _(won't work if they hide forwarded identity in Telegram privacy settings)_\n"
+    "• Pass their *numeric ID*: `/addmaintainer 123456789`\n"
+    "  _(they can find it by messaging @userinfobot)_"
+)
+
+
+async def addmaintainer(update, context):
+    if update.effective_chat.id != Constants.root:
+        await update.effective_chat.send_message('Only the root admin can manage maintainers.')
+        return
+
+    user_id, name = _resolve_user(update, context)
+    if user_id is None:
+        await update.effective_chat.send_message(_MAINTAINER_USAGE, parse_mode='Markdown')
+        return
+
+    if user_id in Options.allowed_ids:
+        await update.effective_chat.send_message(f'{name} already has access.')
+        return
+
+    Options.add_id(user_id, name)
+    logger.info('Added user %s (%s)', name, user_id)
+    await update.effective_chat.send_message(f'Added {name} ({user_id}).')
+
+
+async def removemaintainer(update, context):
+    if update.effective_chat.id != Constants.root:
+        await update.effective_chat.send_message('Only the root admin can remove users.')
+        return
+
+    others = [uid for uid in Options.allowed_ids if uid != Constants.root]
+    if not others:
+        await update.effective_chat.send_message('No users to remove.')
+        return
+
+    keyboard = []
+    for uid in others:
+        label = Options.user_names.get(str(uid), str(uid))
+        keyboard.append([InlineKeyboardButton(label, callback_data=f'remove:{uid}')])
+
+    await update.effective_chat.send_message(
+        'Select a user to remove:',
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
+
+
+async def remove_callback(update, context):
+    query = update.callback_query
+    await query.answer()
+
+    if update.effective_chat.id != Constants.root:
+        await query.edit_message_text('Access denied.')
+        return
+
+    uid = int(query.data.split(':')[1])
+    name = Options.user_names.get(str(uid), str(uid))
+
+    if uid not in Options.allowed_ids:
+        await query.edit_message_text(f'{name} is not in the user list.')
+        return
+
+    Options.remove_id(uid)
+    logger.info('Removed user %s (%s)', name, uid)
+    await query.edit_message_text(f'Removed {name}.')
+
+
+async def listmaintainers(update, context):
+    if update.effective_chat.id != Constants.root:
+        await update.effective_chat.send_message('Only the root admin can view the user list.')
+        return
+
+    others = [uid for uid in Options.allowed_ids if uid != Constants.root]
+    if not others:
+        await update.effective_chat.send_message('No users added yet.')
+        return
+
+    lines = "\n".join(f"• {uid}" for uid in others)
+    await update.effective_chat.send_message(f'Allowed users:\n{lines}')
 
 
 def make_application():
@@ -275,6 +400,10 @@ def make_application():
     app.add_handler(CommandHandler("program", program))
     app.add_handler(CommandHandler("programs", programs))
     app.add_handler(CommandHandler("skip", skip))
+    app.add_handler(CommandHandler("addmaintainer", addmaintainer))
+    app.add_handler(CommandHandler("removemaintainer", removemaintainer))
+    app.add_handler(CommandHandler("listmaintainers", listmaintainers))
+    app.add_handler(CallbackQueryHandler(remove_callback, pattern=r'^remove:'))
 
     app.add_handler(MessageHandler(filters.VOICE, voice_handler))
     app.add_handler(MessageHandler(filters.PHOTO, image_handler))
